@@ -87,10 +87,10 @@ else:
     }
 
 SENSOR_SPECIFIC_PARAMS = {"is_rotated": True}
-LIDAR_ARGUMENTS = [
-    os.path.join(
-        get_package_share_directory("sick_scan_xd"), "launch/sick_tim_7xx.launch"
-    ),
-    "hostname:=192.168.1.10",
-]
-REALSENSE_CONFIG = "/ros_ws/people_tracker/config/realsense_params.json"
+# LIDAR_ARGUMENTS = [
+#     os.path.join(
+#         get_package_share_directory("sick_scan_xd"), "launch/sick_tim_7xx.launch"
+#     ),
+#     "hostname:=192.168.1.10",
+# ]
+REALSENSE_CONFIG = "/ros_ws/rexasi_tracker/config/realsense_params.json"

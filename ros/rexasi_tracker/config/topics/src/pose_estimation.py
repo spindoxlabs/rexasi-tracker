@@ -4,7 +4,7 @@ import sys
 # if os.getcwd() not in sys.path:
 #     sys.path.append(os.getcwd())
 
-from people_tracker.config.topics.src.realsense import RGB_IMAGE_TOPIC
+from rexasi_tracker.config.topics.src.realsense import RGB_IMAGE_TOPIC
 
 # ++++ pose estimation node topics ++++
 POSE_ESTIMATION_OUTPUT_TOPIC = "position/keypoints"

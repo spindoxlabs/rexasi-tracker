@@ -1,35 +1,24 @@
 version: "3"
 
 networks:
-  rexasipro:
-    name: "rexasipro"
+  rexasi-tracker:
+    name: "rexasi-tracker"
     external: true
 
 services:
-  people-tracker:
-    container_name: people-tracker-dev
-    image: rexasipro/people-tracker
+  rexasi-tracker:
+    container_name: rexasi-tracker
+    image: rexasi-tracker
     build:
       context: .
       dockerfile: ./Dockerfile.amd64
-    command: ros2 launch people_tracker test.py
+    command: ros2 launch rexasi_tracker launch.py
     environment:
-      UID: 1000
-      GID: 1000
       PYTHONUNBUFFERED: 1
-      # CAMERA_1_RGB_TOPIC: { camera color image_raw topic }
-      # CAMERA_1_DEPTH_TOPIC: { camera depth image_rect_raw topic }
-      # CAMERA_1_INFO_TOPIC: { camera depth camera_info topic }
-      # CAMERA_1_FRAME_ID: { camera base link frame id }
-      # CAMERA_1_OPTICAL_FRAME_ID: { camera optical link frame id }
-      # LIDAR_TOPIC: { lidar topic }
-      # WHEELCHAIR_FRAME_ID: { wheelchair base link frame id }
     volumes:
-      - ./data:/data
-      - ./ros/people_tracker:/ros_ws/people_tracker
-      - ./ros/people_tracker/launch:/ros_ws/install/people_tracker/share/people_tracker/launch/
+      - ../data:/data
     networks:
-      - rexasipro
+      - rexasi-tracker
     runtime: nvidia
     privileged: true
     deploy:
@@ -39,6 +28,3 @@ services:
             - driver: nvidia
               count: 1 # alternatively, use `count: all` for all GPUs
               capabilities: [gpu]
-volumes:
-  mcap-reader-bash-history:
-  mcap-reader-vscode-server:

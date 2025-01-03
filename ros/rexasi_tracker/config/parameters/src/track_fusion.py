@@ -3,9 +3,15 @@ import sys
 
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
-from people_tracker.config.parameters.src.general import STREAM_OPEN
-from people_tracker.config.parameters.src.camera import FPS 
-from people_tracker.config.parameters.src.sensors import LIDAR_ID, CAMERA_1_ID, CAMERA_2_ID, STEREO_ID
+# from rexasi_tracker.config.parameters.src.general import STREAM_OPEN
+STREAM_OPEN = True
+# from rexasi_tracker.config.parameters.src.camera import FPS 
+# from rexasi_tracker.config.parameters.src.sensors import LIDAR_ID, CAMERA_1_ID, CAMERA_2_ID, STEREO_ID
+FPS=15
+LIDAR_ID=0
+CAMERA_1_ID = 1
+CAMERA_2_ID= 2 
+STEREO_ID = -1
 
 DISTANCE_FUNCTION: str = "euclidean"
 DISTANCE_THRESHOLD: int = 1

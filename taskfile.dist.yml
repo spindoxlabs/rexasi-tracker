@@ -9,7 +9,6 @@ vars:
 
 includes:
   setup: ./tasks/setup.yml
-  evaluation: ./tasks/evaluation.yml
 
 
 tasks:
@@ -19,21 +18,19 @@ tasks:
       - task setup:clean
       - task setup:init-network
       - task setup:build-image
-      - task setup:compile-calibration
-      - task setup:download-models
 
-  start/dev:
+  start:
     cmds:
-      - '{{.DOCKER_COMPOSE_CMD}} up'
+      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.yaml up'
 
   start/jetson:
     cmds:
-      - '{{.DOCKER_COMPOSE_CMD}} -f docker-compose-jetson.yaml up'
+      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.jetson.yaml up'
 
   rviz:
     cmds:
       - xhost local:root
-      - '{{.DOCKER_COMPOSE_CMD}} -f docker-compose-rviz.yaml up -d'
+      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.rviz.yaml up -d'
 
   bash:
     cmds:

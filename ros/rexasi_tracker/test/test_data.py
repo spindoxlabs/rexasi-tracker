@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 sys.path.append(os.getcwd())
-from people_tracker.utils.dto import SensorData, CenterData, Keypoints
+from rexasi_tracker.utils.dto import SensorData, CenterData, Keypoints
 
 TEST_BACKPROJECT_DATA = {
     1: [[373, 419, 0, 2], [524, 337, 1, 4], [304, 335, -1, 4]],

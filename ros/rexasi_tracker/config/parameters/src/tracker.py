@@ -3,8 +3,11 @@ import sys
 
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
-from people_tracker.config.parameters.src.camera import FPS
-from people_tracker.config.parameters.src.lidar import SCAN_RATE
+# from rexasi_tracker.config.parameters.src.camera import FPS
+# from rexasi_tracker.config.parameters.src.lidar import SCAN_RATE
+FPS=15
+SCAN_RATE=15
+
 
 """
 distance function:  define distance function

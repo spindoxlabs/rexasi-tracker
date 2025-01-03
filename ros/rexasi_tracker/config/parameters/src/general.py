@@ -5,9 +5,9 @@ import yaml
 from torch import cuda
 
 STREAM_OPEN: bool = True
-CONFIG_FILE: str = "/ros_ws/people_tracker/config/config.yml"
+CONFIG_FILE: str = "/ros_ws/rexasi_tracker/config/config.yml"
 CALIBRATION_FILE: str = (
-    "/ros_ws/people_tracker/config/camera_calibration/calibration_camera.yml"
+    "/ros_ws/rexasi_tracker/config/camera_calibration/calibration_camera.yml"
 )
 USE_PYREALSENSE: bool = True
 DEVICE: str = "cuda" if cuda.is_available() else "cpu"

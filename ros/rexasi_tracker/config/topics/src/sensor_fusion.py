@@ -4,7 +4,7 @@ import sys
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 
-from people_tracker.config.topics.src.tracker import TRACKER_OUTPUT_TOPIC
+from rexasi_tracker.config.topics.src.tracker import TRACKER_OUTPUT_TOPIC
 
 # ++++ sensor fusion node topics ++++
 SENSORFUSION_OUTPUT_TOPIC: str = "position/px2cc/tracked/fused"

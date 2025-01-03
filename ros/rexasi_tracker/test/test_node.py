@@ -14,7 +14,7 @@ from rexasi_tracker.config.parameters.src.general import DEVICE, DEVICE_N
 from rexasi_tracker.libs.transformation_functions import lidar_calibration_wrapper
 
 CALIBRATION_TEST_FILE: str = (
-    "/ros_ws/people_tracker/config/camera_calibration/calibration_camera_test.yml"
+    "/ros_ws/rexasi_tracker/config/camera_calibration/calibration_camera_test.yml"
 )
 
 class TestNode:

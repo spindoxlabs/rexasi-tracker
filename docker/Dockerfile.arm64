@@ -119,10 +119,10 @@ RUN python3 -m pip install pyrealsense2
 ENV PYTHONPATH=$PYTHONPATH:/usr/local/lib
 ENV PYTHONPATH=$PYTHONPATH:/usr/local/OFF/
 
-COPY ros/people_tracker people_tracker
-COPY ros/people_tracker_msgs people_tracker_msgs
-RUN source /opt/ros/$ROS_DISTRO/install/setup.bash && colcon build --packages-select people_tracker
-RUN source /opt/ros/$ROS_DISTRO/install/setup.bash && colcon build --packages-select people_tracker_msgs
+COPY ros/rexasi_tracker rexasi_tracker
+COPY ros/rexasi_tracker_msgs rexasi_tracker_msgs
+RUN source /opt/ros/$ROS_DISTRO/install/setup.bash && colcon build --packages-select rexasi_tracker
+RUN source /opt/ros/$ROS_DISTRO/install/setup.bash && colcon build --packages-select rexasi_tracker_msgs
 
 ENV PYTHONPATH=$PYTHONPATH:/usr/lib/python3.8/site-packages/dr_spaam-1.2.0-py3.8.egg
 

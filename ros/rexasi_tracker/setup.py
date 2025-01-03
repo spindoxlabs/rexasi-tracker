@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 from glob import glob
 
-package_name = "people_tracker"
+package_name = "rexasi_tracker"
 
 setup(
     name=package_name,

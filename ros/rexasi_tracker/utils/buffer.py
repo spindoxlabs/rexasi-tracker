@@ -4,7 +4,7 @@ from threading import Event
 import queue
 import copy
 
-from people_tracker.config.parameters.src.camera import FPS
+from rexasi_tracker.config.parameters.src.camera import FPS
 
 
 class BlockingDeque(deque):

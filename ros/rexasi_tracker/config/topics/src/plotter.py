@@ -4,9 +4,9 @@ import sys
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 
-from people_tracker.config.topics.src.tracker import TRACKER_OUTPUT_TOPIC
-from people_tracker.config.topics.src.sensor_fusion import SENSORFUSION_OUTPUT_TOPIC
-from people_tracker.config.topics.src.realsense import RGB_IMAGE_TOPIC
+from rexasi_tracker.config.topics.src.tracker import TRACKER_OUTPUT_TOPIC
+from rexasi_tracker.config.topics.src.sensor_fusion import SENSORFUSION_OUTPUT_TOPIC
+from rexasi_tracker.config.topics.src.realsense import RGB_IMAGE_TOPIC
 
 # +++ plotter ++++
 PLOTTER_OUTPUT_TOPIC = "plot/image"
