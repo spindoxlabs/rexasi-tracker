@@ -21,6 +21,7 @@ from rexasi_tracker_msgs.msg import RexString
 
 DEBUG_MARKERS_TOPIC = "/debug/norfair"
 COLORS = [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
+MAX_SENSORS_NR=100
 
 class Norfair(Node):
     """
@@ -70,7 +71,7 @@ class Norfair(Node):
         self.n_cameras = (
             self.get_parameter("n_cameras").get_parameter_value().integer_value
         )
-        self.cameras = [idx for idx in range(1, self.n_cameras + 1)]
+        self.cameras = {} # [idx for idx in range(1, self.n_cameras + 1)]
 
         # every tracker is saved inside a dictionary, where the key is the camera_label and the value is the tracker
         # example: {
@@ -84,16 +85,16 @@ class Norfair(Node):
         self.get_logger().info(
             f"Setting trackers and tracked_objects for cameras: {self.cameras}"
         )
-        self.cameras = {
-            idx: {
-                "tracker": Tracker(
-                    **tracker_parameters["model"]["rgbd"],
-                    filter_factory=OptimizedKalmanFilterFactory(),  # filter for reid
-                ),
-                "tracked_objects": [],
-            }
-            for idx in self.cameras
-        }
+        # self.cameras = {
+        #     idx: {
+        #         "tracker": Tracker(
+        #             **tracker_parameters["model"]["rgbd"],
+        #             filter_factory=OptimizedKalmanFilterFactory(),  # filter for reid
+        #         ),
+        #         "tracked_objects": [],
+        #     }
+        #     for idx in self.cameras
+        # }
 
         # tracker for stereo vision
         # todo: this is a workaround for flawlessy add the tracker to the stereo vision.
@@ -126,7 +127,17 @@ class Norfair(Node):
         # self.timestamps: List[int] = []
 
         # keep track of hit_counters
-        self.current_tracks_id = {idx: set() for idx in self.cameras}
+        self.current_tracks_id = {} # {idx: set() for idx in self.cameras}
+
+    def add_sensor(self, sensor_id):
+        self.cameras[sensor_id] = {
+                "tracker": Tracker(
+                    **tracker_parameters["model"]["rgbd"],  #TODO take values from config file or initialize with defaults
+                    filter_factory=OptimizedKalmanFilterFactory(),  # filter for reid
+                ),
+                "tracked_objects": [],
+            }
+        self.current_tracks_id[sensor_id] = set()
 
     def msg_event(self, msg):
         """
@@ -151,10 +162,15 @@ class Norfair(Node):
         # if idx not exists, skip (this might be yielded but void camerdata data such as
         # Cameradata(cam_idx=0, timestamp=0, detections=[[[]]])
         if tracker_data.idx not in self.cameras:
-            self.get_logger().error(
-                f"Detected an unknown camera idx: {tracker_data.idx}: {tracker_data}"
-            )
-            return
+            # self.get_logger().error(
+            #     f"Detected an unknown camera idx: {tracker_data.idx}: {tracker_data}"
+            # )
+            #return
+            if len(self.cameras.entries()) > MAX_SENSORS_NR:
+                self.get_logger().error("Reached max sensor number limit (%d)" % MAX_SENSORS_NR)
+                return
+            self.get_logger().info("Adding sensor with index: %d" % tracker_data.idx)
+            self.add_sensor(tracker_data.idx)
 
         # Use a buffer to detect and filter duplicated timestamps
         # if tracker_data.timestamp in self.timestamps:
