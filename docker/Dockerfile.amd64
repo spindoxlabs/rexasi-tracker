@@ -1,0 +1,100 @@
+FROM nvidia/cuda:12.2.0-base-ubuntu22.04 as builder
+# FROM ros:humble as builder
+
+ARG UBUNTU_CODENAME=jammy
+ARG ARCH=amd64
+ARG ROS_DISTRO=humble
+
+SHELL ["/bin/bash", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive 
+RUN apt update && apt dist-upgrade -y && apt install -y software-properties-common
+RUN add-apt-repository universe
+RUN apt update && apt install -y curl
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN echo "deb [arch=$ARCH signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+RUN apt update && apt install -y \
+  ros-$ROS_DISTRO-desktop \
+  git \
+  python3 \
+  python3-pip \
+  python3-colcon-common-extensions \
+  python3-opencv \
+  bash \
+  python3-distutils \
+  ros-$ROS_DISTRO-ros2bag \
+  ros-$ROS_DISTRO-rosbag2-transport \
+  ros-$ROS_DISTRO-rosbag2-storage-mcap\
+  ros-$ROS_DISTRO-realsense2-* \
+  ros-$ROS_DISTRO-tf-transformations
+
+# ROS workspace
+RUN mkdir -p /ros_ws/src
+WORKDIR /ros_ws
+
+# install lidar driver
+RUN git clone https://github.com/SICKAG/libsick_ldmrs.git src/libsick_ldmrs
+RUN git clone https://github.com/SICKAG/sick_scan_xd.git src/sick_scan_xd
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select libsick_ldmrs --event-handlers console_direct+
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select sick_scan_xd --cmake-args " -DSCANSEGMENT_XD=0" " -DLDMRS=0" " -DROS_VERSION=2" --event-handlers console_direct+
+
+COPY ros/people_tracker/libs/dr_spaam src/dr_spaam
+RUN cd src/dr_spaam && python3 setup.py install
+
+# install calibration requirements
+RUN git clone https://github.com/labvisio/is-aruco-calib-py src/is_aruco_calib_py
+RUN cd src/is_aruco_calib_py && pip3 install .
+
+# this section is used to update part of ros2 code to ros2-development
+# it's specifically used to update realsense2_camera to integrate namespaces.
+# will become useless when ros2-development branch will be merged in main by ros2 maintainers
+
+# RUN git clone https://github.com/IntelRealSense/realsense-ros.git -b ros2-development
+# RUN rm -rf opt/ros/$ROS_DISTRO/share/realsense2_camera
+# RUN mv --force realsense-ros/realsense2_camera opt/ros/$ROS_DISTRO/share/
+# RUN rm -rf realsense-ros
+
+RUN apt remove -y python3-sympy 
+ADD requirements.txt .
+RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install -r requirements.txt
+
+# for amd, install pyrealsense2 from pip
+RUN python3 -m pip install pyrealsense2
+RUN pip install pylint
+
+# update libs
+RUN python3 -m pip install --upgrade scipy
+RUN pip install --upgrade setuptools==70.3.0
+
+RUN apt update && apt install -y ros-humble-python-orocos-kdl-vendor
+RUN git clone https://github.com/jeguzzi/natnet_py src/natnet_py
+RUN git clone https://github.com/jeguzzi/optitrack_msgs src/optitrack_msg
+RUN git clone https://github.com/jeguzzi/optitrack_ros_py src/optitrack_ros_py
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && colcon build
+
+RUN apt install -y \
+  gstreamer1.0-libav libx265-dev python3-rosdep \
+  gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libgstreamer-plugins-good1.0-dev \
+    libgstreamer-plugins-bad1.0-dev
+RUN git clone https://github.com/jeguzzi/gscam --branch multi src/gscam
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && rosdep init
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && rosdep update
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && rosdep install --from-paths src/gscam -y --ignore-src 
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && colcon build 
+
+COPY ros/people_tracker people_tracker
+COPY ros/people_tracker_msgs people_tracker_msgs
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select people_tracker
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && colcon build --packages-select people_tracker_msgs
+
+RUN git clone  https://github.com/AIT-Assistive-Autonomous-Systems/ros2bag_tools.git src/ros2bag_tools
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && colcon build
+
+COPY ros_entrypoint.sh /
+ENTRYPOINT ["/ros_entrypoint.sh"]

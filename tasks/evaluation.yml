@@ -1,0 +1,31 @@
+version: '3'
+
+tasks:
+
+  setup:
+    cmds:
+      - pip install -r evaluation/requirements.txt
+      - mkdir -p evaluation/visualization
+
+  prepare:
+    vars:
+      EVAL_INPUT_FILE: './evaluation/datasets.yml'
+    cmds:
+      - python evaluation/prepare_evaluation.py --input_file {{.EVAL_INPUT_FILE}}
+
+  eval:
+    cmds:
+      - python evaluation/TrackEval/scripts/run_mot_challenge.py --BENCHMARK rexasipro_rgbd_camera_1 --SPLIT_TO_EVAL test --TRACKERS_TO_EVAL rgbd_camera_1 --USE_PARALLEL False --NUM_PARALLEL_CORES 1 --DO_PREPROC False
+      - python evaluation/TrackEval/scripts/run_mot_challenge.py --BENCHMARK rexasipro_rgbd_camera_2 --SPLIT_TO_EVAL test --TRACKERS_TO_EVAL rgbd_camera_2 --USE_PARALLEL False --NUM_PARALLEL_CORES 1 --DO_PREPROC False
+      - python evaluation/TrackEval/scripts/run_mot_challenge.py --BENCHMARK rexasipro_kalman_fusion --SPLIT_TO_EVAL test --TRACKERS_TO_EVAL kalman_fusion --USE_PARALLEL False --NUM_PARALLEL_CORES 1 --DO_PREPROC False
+      - python evaluation/TrackEval/scripts/run_mot_challenge.py --BENCHMARK rexasipro_stereo --SPLIT_TO_EVAL test --TRACKERS_TO_EVAL stereo --USE_PARALLEL False --NUM_PARALLEL_CORES 1 --DO_PREPROC False
+      - python evaluation/TrackEval/scripts/run_mot_challenge.py --BENCHMARK rexasipro_lidar --SPLIT_TO_EVAL test --TRACKERS_TO_EVAL lidar --USE_PARALLEL False --NUM_PARALLEL_CORES 1 --DO_PREPROC False
+
+  export:
+    vars:
+      EVAL_EXPORT_FOLDER: './data/eval'
+    cmds:
+      - mkdir -p {{.EVAL_EXPORT_FOLDER}}
+      - cp -r evaluation/visualization {{.EVAL_EXPORT_FOLDER}}/
+      - cp -r evaluation/TrackEval/data/trackers/mot_challenge {{.EVAL_EXPORT_FOLDER}}/
+      - cp -r data/output/debug/ {{.EVAL_EXPORT_FOLDER}}/

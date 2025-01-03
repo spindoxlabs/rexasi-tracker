@@ -1,0 +1,39 @@
+version: "3"
+
+services:
+  people-tracker:
+    container_name: people-tracker-jetson
+    image: rexasipro/people-tracker
+    build:
+      context: .
+      dockerfile: ./Dockerfile.arm64
+    command: ros2 launch people_tracker jetson.py
+    environment:
+      UID: 1000
+      GID: 1000
+      PYTHONUNBUFFERED: 1
+      # CAMERA_1_RGB_TOPIC: /camera_1/color/image_raw
+      CAMERA_2_RGB_TOPIC: /front_right_camera/color/image_raw
+      # CAMERA_1_DEPTH_TOPIC: /camera_1/depth/image_rect_raw
+      CAMERA_2_DEPTH_TOPIC: /front_right_camera/depth/image_rect_raw
+      # CAMERA_1_INFO_TOPIC: /camera_1/depth/camera_info
+      CAMERA_2_INFO_TOPIC: /front_right_camera/depth/camera_info
+      # LIDAR_TOPIC: /scan
+    volumes:
+      - ./data:/data
+      - ./ros/people_tracker:/ros_ws/people_tracker
+      - ./ros/people_tracker/launch:/ros_ws/install/people_tracker/share/people_tracker/launch/
+    network_mode: host
+    ipc: host
+    runtime: nvidia
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # alternatively, use `count: all` for all GPUs
+              capabilities: [gpu]
+volumes:
+  mcap-reader-bash-history:
+  mcap-reader-vscode-server:

@@ -1,0 +1,29 @@
+title: "Configuration file"
+
+# input_record_csv: "records/emb_04/record.csv"
+# input_track_json: "track/emb-04.json"
+num_cameras: 2
+
+#BackProject
+r: 480
+c: 848
+
+cameras:
+  - cam_idx: 1
+    r: 480
+    c: 848
+    calibration_file: "./camera-calibration/cam1.calib"
+  - cam_idx: 2
+    r: 480
+    c: 848
+    calibration_file: "./camera-calibration/cam2.calib"
+
+match_pose_threshold: 0.12
+match_id_threshold: 1
+# csv_dataset_path: "dataset.csv"
+# csv_evaluation_path: "evaluation_score.csv"
+
+# create_plot: False
+# compute_center_id: False
+# save_dataset: True
+
