@@ -27,3 +27,18 @@ match_id_threshold: 1
 # compute_center_id: False
 # save_dataset: True
 
+sensors:
+  tracker:
+    # "distance_function": DISTANCE_FUNCTION,
+    #         "distance_threshold": DISTANCE_THRESHOLD,
+    #         "initialization_delay": INITIALIZATION_DELAY,
+    #         "hit_counter_max": HIT_COUNTER_MAX,
+    #         # "reid_hit_counter_max": REID_HIT_COUNTER_MAX,
+    #         "pointwise_hit_counter_max": POINTWISE_HIT_COUNTER_MAX,
+  specs:
+    process_noise:
+      - x: 0.1
+      - y: 0.1
+    measurement_noise:
+      - x: 0.1
+      - y: 0.1

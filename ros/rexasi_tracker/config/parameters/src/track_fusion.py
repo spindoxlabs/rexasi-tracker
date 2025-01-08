@@ -57,6 +57,11 @@ kalman_parameters = {
     }
 }
 
+default_kalman_parameters = {
+        "R_std": {"x": 0.001, "y": 0.001},
+        "Q_std": {"x": 0.04, "y": 0.04}
+    }
+
 sensor_exclusion = {
     # LIDAR_ID: {
     #     "condition": "gt",

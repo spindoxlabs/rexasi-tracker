@@ -21,10 +21,7 @@ if os.getcwd() not in sys.path:
 from rexasi_tracker.utils.dto import SensorTrackedData, AssociationTrack, SensorTrack
 from rexasi_tracker.utils.misc import save_evaluation_data
 from rexasi_tracker.config.topics.src.sensor_fusion import sensor_fusion_topics
-from rexasi_tracker.config.parameters.src.track_fusion import (
-    sensor_fusion_parameters,
-)
-from rexasi_tracker.config.parameters.src.track_fusion import kalman_parameters, sensor_exclusion
+from rexasi_tracker.config.parameters.src.track_fusion import sensor_exclusion, default_kalman_parameters, sensor_fusion_parameters
 from rexasi_tracker_msgs.msg import Detection, DetectionArray, RexString
 from rexasi_tracker.config.parameters.src.launch import PARAMS
 
@@ -45,8 +42,8 @@ class TrackFusion(Node):
         self.noMeasure = 2
         self.noQuantity = 4
 
-        self.R_std: Dict[int, Dict[String, float]] = kalman_parameters['R_std']
-        self.Q_std: Dict[int, Dict[String, float]] = kalman_parameters['Q_std']
+        # self.R_std: Dict[int, Dict[String, float]] = kalman_parameters['R_std']
+        # self.Q_std: Dict[int, Dict[String, float]] = kalman_parameters['Q_std']
 
         self.debug = self.get_parameter(
             "debug").get_parameter_value().bool_value
@@ -86,13 +83,13 @@ class TrackFusion(Node):
         )
 
         # define tracker
-        self.tracker = Tracker(**sensor_fusion_parameters["model"])
+        # self.tracker = Tracker(**sensor_fusion_parameters["model"])
 
         # define kalman filters used for every detections
-        self.filters = {}
+        # self.filters = {}
 
         # define internal identities
-        self.internal_identities = {}
+        # self.internal_identities = {}
 
 
     def reset_data(self):
@@ -164,6 +161,10 @@ class TrackFusion(Node):
         self.process(topic_data, msg.header.stamp)
         # self.buffer.append(topic_data)
 
+    def get_parameters(self, sensor_id):
+        # TODO get from config file or use defaults
+        return default_kalman_parameters
+
     def kalman_init(self, sensor_id):
 
         # Init Kalman filter
@@ -180,13 +181,13 @@ class TrackFusion(Node):
         kf.H = np.array([[1., 0., 0., 0.],
                         [0., 0., 1., 0.]])
 
-        kf.R = np.eye(2) * [self.R_std[sensor_id]['x'] **
-                            2, self.R_std[sensor_id]['y']**2]
+        kf.R = np.eye(2) * [self.get_parameters(sensor_id)["R_std"]["x"] **
+                             2, self.get_parameters(sensor_id)["R_std"]["y"]**2]
 
         q_x = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=0, var=self.Q_std[sensor_id]['x']**2)
+            dim=self.noMeasure, dt=0, var=self.get_parameters(sensor_id)["Q_std"]["x"]**2)
         q_y = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=0, var=self.Q_std[sensor_id]['y']**2)
+            dim=self.noMeasure, dt=0, var=self.get_parameters(sensor_id)["Q_std"]["y"]**2)
         kf.Q = block_diag(q_x, q_y)
 
         kf.x = np.array([[0., 0., 0., 0.]]).T
@@ -206,18 +207,18 @@ class TrackFusion(Node):
         track.kalman_filter.kf.F[0, 1] = dt
         track.kalman_filter.kf.F[2, 3] = dt
         q_x = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=dt, var=self.Q_std[track.current_sensor_id]['x']**2)
+            dim=self.noMeasure, dt=dt, var=self.get_parameters(track.current_sensor_id)["Q_std"]["x"]**2)
         q_y = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=dt, var=self.Q_std[track.current_sensor_id]['y']**2)
+            dim=self.noMeasure, dt=dt, var=self.get_parameters(track.current_sensor_id)["Q_std"]["y"]**2)
         track.kalman_filter.kf.Q[0:2, 0:2] = q_x
         track.kalman_filter.kf.Q[2:4, 2:4] = q_y
         track.kalman_filter.kf.predict()
         # UPDATE
         # Update R
         track.kalman_filter.kf.R[0,
-                                 0] = self.R_std[track.current_sensor_id]['x']**2
+                                 0] = self.get_parameters(track.current_sensor_id)["R_std"]["x"]**2
         track.kalman_filter.kf.R[1,
-                                 1] = self.R_std[track.current_sensor_id]['y']**2
+                                 1] = self.get_parameters(track.current_sensor_id)["R_std"]["y"]**2
         track.kalman_filter.kf.update(np.asarray(track.center))
         track.kalman_filter.last_ts = track.timestamp
 

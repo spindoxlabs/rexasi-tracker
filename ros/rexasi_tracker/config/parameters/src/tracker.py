@@ -66,3 +66,12 @@ tracker_parameters = {
     "n_timestamps": N_TIMESTAMPS,
     "measure_unit": MEASURE_UNIT,
 }
+
+default_tracker_parameters = {
+        "distance_function": DISTANCE_FUNCTION,
+        "distance_threshold": DISTANCE_THRESHOLD,
+        "initialization_delay": INITIALIZATION_DELAY,
+        "hit_counter_max": HIT_COUNTER_MAX,
+        # "reid_hit_counter_max": REID_HIT_COUNTER_MAX,
+        "pointwise_hit_counter_max": POINTWISE_HIT_COUNTER_MAX,
+    }

@@ -15,8 +15,7 @@ sys.path.append(os.getcwd())
 from rexasi_tracker.utils.dto import SensorTrackedData
 from rexasi_tracker.utils.misc import save_evaluation_data
 from rexasi_tracker.config.topics.src.tracker import tracker_topics
-from rexasi_tracker.config.parameters.src.tracker import tracker_parameters
-# from rexasi_tracker.config.parameters.src.sensors import LIDAR_ID, STEREO_ID
+from rexasi_tracker.config.parameters.src.tracker import tracker_parameters, default_tracker_parameters
 from rexasi_tracker_msgs.msg import RexString
 
 DEBUG_MARKERS_TOPIC = "/debug/norfair"
@@ -71,69 +70,20 @@ class Norfair(Node):
         self.n_cameras = (
             self.get_parameter("n_cameras").get_parameter_value().integer_value
         )
-        self.cameras = {} # [idx for idx in range(1, self.n_cameras + 1)]
-
-        # every tracker is saved inside a dictionary, where the key is the camera_label and the value is the tracker
-        # example: {
-        #           idx:
-        #               {
-        #                   "tracker": tracker
-        #                   "objects": tracked_objects
-        #                },
-        #           ....
-        # }
-        self.get_logger().info(
-            f"Setting trackers and tracked_objects for cameras: {self.cameras}"
-        )
-        # self.cameras = {
-        #     idx: {
-        #         "tracker": Tracker(
-        #             **tracker_parameters["model"]["rgbd"],
-        #             filter_factory=OptimizedKalmanFilterFactory(),  # filter for reid
-        #         ),
-        #         "tracked_objects": [],
-        #     }
-        #     for idx in self.cameras
-        # }
-
-        # tracker for stereo vision
-        # todo: this is a workaround for flawlessy add the tracker to the stereo vision.
-        # Is this needs refactor?
-        # self.cameras[STEREO_ID] = {
-        #     "tracker": Tracker(
-        #         **tracker_parameters["model"]["stereo"],
-        #         filter_factory=OptimizedKalmanFilterFactory(),  # filter for reid
-        #     ),
-        #     "tracked_objects": [],
-        # }
-        # self.get_logger().info(
-        #     f"Setting trackers and tracked_objects for stereo: {[STEREO_ID]}"
-        # )
-
-        # # tracker for lidar
-        # # todo: this is a workaround for flawlessy add the tracker to the lidar.
-        # # Is this needs refactor?
-        # self.cameras[LIDAR_ID] = {
-        #     "tracker": Tracker(
-        #         **tracker_parameters["model"]["lidar"],
-        #         filter_factory=OptimizedKalmanFilterFactory(),  # filter for reid
-        #     ),
-        #     "tracked_objects": [],
-        # }
-        # self.get_logger().info(
-        #     f"Setting trackers and tracked_objects for lidar: {[LIDAR_ID]}"
-        # )
-        # buffer where timestamps are saved in order to filter duplicated timestamps
-        # self.timestamps: List[int] = []
+        self.cameras = {}
 
         # keep track of hit_counters
-        self.current_tracks_id = {} # {idx: set() for idx in self.cameras}
+        self.current_tracks_id = {}
+
+    def get_parameters(self, sensor_id):
+        # TODO get from config file or use defaults
+        return default_tracker_parameters
 
     def add_sensor(self, sensor_id):
         self.cameras[sensor_id] = {
                 "tracker": Tracker(
-                    **tracker_parameters["model"]["rgbd"],  #TODO take values from config file or initialize with defaults
-                    filter_factory=OptimizedKalmanFilterFactory(),  # filter for reid
+                    **self.get_parameters(sensor_id),
+                    filter_factory=OptimizedKalmanFilterFactory(), # filter for reid
                 ),
                 "tracked_objects": [],
             }
@@ -162,24 +112,11 @@ class Norfair(Node):
         # if idx not exists, skip (this might be yielded but void camerdata data such as
         # Cameradata(cam_idx=0, timestamp=0, detections=[[[]]])
         if tracker_data.idx not in self.cameras:
-            # self.get_logger().error(
-            #     f"Detected an unknown camera idx: {tracker_data.idx}: {tracker_data}"
-            # )
-            #return
             if len(self.cameras.entries()) > MAX_SENSORS_NR:
                 self.get_logger().error("Reached max sensor number limit (%d)" % MAX_SENSORS_NR)
                 return
             self.get_logger().info("Adding sensor with index: %d" % tracker_data.idx)
             self.add_sensor(tracker_data.idx)
-
-        # Use a buffer to detect and filter duplicated timestamps
-        # if tracker_data.timestamp in self.timestamps:
-        #    self.get_logger().warning(
-        #        f"Detected duplicated timestamp: {tracker_data.timestamp}"
-        #    )
-        #    return
-        # self.timestamps.append(tracker_data.timestamp)
-        # self.timestamps = self.timestamps[-tracker_parameters["n_timestamps"] :]
 
         # parse detection data according to MEASURE_UNIT variable
         cam_idx = tracker_data.idx
