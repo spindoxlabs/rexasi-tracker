@@ -1,0 +1,19 @@
+fusion_parameters:
+  tracks_distance_threshold: TRACKS_DISTANCE_THRESHOLD
+  hungarian_threshold: HUNGARIAN_THRESHOLD
+
+sensors:
+  0:
+    tracker_paramterers:
+      distance_function: DISTANCE_FUNCTION
+      distance_threshold: DISTANCE_THRESHOLD
+      initialization_delay: INITIALIZATION_DELAY
+      hit_counter_max: HIT_COUNTER_MAX
+      pointwise_hit_counter_max: POINTWISE_HIT_COUNTER_MAX
+    kalman_parameters:
+      R_std:
+        x: 0.001
+        y: 0.001
+      Q_std:
+        x: 0.04
+        y: 0.04

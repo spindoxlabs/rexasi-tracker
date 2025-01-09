@@ -94,7 +94,9 @@ class TrackFusion(Node):
     
     def get_fusion_parameters(self):
         if "fusion_parameters" in self.config:
-            return self.config["fusion_parameters"]
+            if "tracks_distance_threshold" in self.config["fusion_parameters"] \
+                and "hungarian_threshold" in self.config["fusion_parameters"]:
+                return self.config["fusion_parameters"]
         return default_fusion_parameters
 
     def reset_data(self):
