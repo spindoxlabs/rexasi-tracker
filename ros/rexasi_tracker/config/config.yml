@@ -28,17 +28,17 @@ match_id_threshold: 1
 # save_dataset: True
 
 sensors:
-  tracker:
-    # "distance_function": DISTANCE_FUNCTION,
-    #         "distance_threshold": DISTANCE_THRESHOLD,
-    #         "initialization_delay": INITIALIZATION_DELAY,
-    #         "hit_counter_max": HIT_COUNTER_MAX,
-    #         # "reid_hit_counter_max": REID_HIT_COUNTER_MAX,
-    #         "pointwise_hit_counter_max": POINTWISE_HIT_COUNTER_MAX,
-  specs:
-    process_noise:
-      - x: 0.1
-      - y: 0.1
-    measurement_noise:
-      - x: 0.1
-      - y: 0.1
+  0:
+    tracker_paramterers:
+      distance_function: DISTANCE_FUNCTION
+      distance_threshold: DISTANCE_THRESHOLD
+      initialization_delay: INITIALIZATION_DELAY
+      hit_counter_max: HIT_COUNTER_MAX
+      pointwise_hit_counter_max: POINTWISE_HIT_COUNTER_MAX
+    kalman_parameters:
+      R_std:
+        x: 0.001
+        y: 0.001
+      Q_std:
+        x: 0.04
+        y: 0.04

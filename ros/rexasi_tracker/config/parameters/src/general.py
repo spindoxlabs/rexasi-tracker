@@ -74,11 +74,11 @@ def load_camera_height(cam_idx: int, logger=logging.getLogger()):
     return camera_config["T3"]
 
 
-cameras_parameters = {
-    cam_idx: {
-        "translation": load_camera_translation(cam_idx),
-        "rotation": load_camera_rotation(cam_idx),
-        "height": load_camera_height(cam_idx),
-    }
-    for cam_idx in [x["cam_idx"] for x in load_config()["cameras"]]
-}
+# cameras_parameters = {
+#     cam_idx: {
+#         "translation": load_camera_translation(cam_idx),
+#         "rotation": load_camera_rotation(cam_idx),
+#         "height": load_camera_height(cam_idx),
+#     }
+#     for cam_idx in [x["cam_idx"] for x in load_config()["cameras"]]
+# }

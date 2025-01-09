@@ -19,11 +19,12 @@ from transforms3d._gohlketransforms import quaternion_from_euler
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 from rexasi_tracker.utils.dto import SensorTrackedData, AssociationTrack, SensorTrack
-from rexasi_tracker.utils.misc import save_evaluation_data
+from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
 from rexasi_tracker.config.topics.src.sensor_fusion import sensor_fusion_topics
-from rexasi_tracker.config.parameters.src.track_fusion import sensor_exclusion, default_kalman_parameters, sensor_fusion_parameters
+from rexasi_tracker.config.parameters.src.track_fusion import sensor_exclusion, default_kalman_parameters,default_fusion_parameters, sensor_fusion_parameters
 from rexasi_tracker_msgs.msg import Detection, DetectionArray, RexString
 from rexasi_tracker.config.parameters.src.launch import PARAMS
+from rexasi_tracker.config.parameters.src.general import CONFIG_FILE
 
 DEBUG_MARKERS_TOPIC = "/debug/association"
 DEBUG_CSV_FILE = "/data/sensor_fusion.csv"
@@ -34,10 +35,12 @@ class TrackFusion(Node):
     def __init__(self):
         super().__init__("FUSION", automatically_declare_parameters_from_overrides=True)
 
+        self.config = load_yaml(CONFIG_FILE)
+
         self.frame_number = 0
 
-        self.distance_threshold = sensor_fusion_parameters["tracks_distance_threshold"]
-        self.hungarian_threshold = sensor_fusion_parameters["hungarian_threshold"]
+        self.distance_threshold = self.get_fusion_parameters()["tracks_distance_threshold"]
+        self.hungarian_threshold = self.get_fusion_parameters()["hungarian_threshold"]
 
         self.noMeasure = 2
         self.noQuantity = 4
@@ -82,15 +85,17 @@ class TrackFusion(Node):
             DetectionArray, 'output/tracks', 10
         )
 
-        # define tracker
-        # self.tracker = Tracker(**sensor_fusion_parameters["model"])
-
-        # define kalman filters used for every detections
-        # self.filters = {}
-
-        # define internal identities
-        # self.internal_identities = {}
-
+    def get_kalman_parameters(self, sensor_id):
+        try:
+            return self.config["sensors"][sensor_id]["kalman_parameters"]
+        except:
+            pass
+        return default_kalman_parameters
+    
+    def get_fusion_parameters(self):
+        if "fusion_parameters" in self.config:
+            return self.config["fusion_parameters"]
+        return default_fusion_parameters
 
     def reset_data(self):
         self.identity_index = 0
@@ -161,10 +166,6 @@ class TrackFusion(Node):
         self.process(topic_data, msg.header.stamp)
         # self.buffer.append(topic_data)
 
-    def get_parameters(self, sensor_id):
-        # TODO get from config file or use defaults
-        return default_kalman_parameters
-
     def kalman_init(self, sensor_id):
 
         # Init Kalman filter
@@ -181,13 +182,13 @@ class TrackFusion(Node):
         kf.H = np.array([[1., 0., 0., 0.],
                         [0., 0., 1., 0.]])
 
-        kf.R = np.eye(2) * [self.get_parameters(sensor_id)["R_std"]["x"] **
-                             2, self.get_parameters(sensor_id)["R_std"]["y"]**2]
+        kf.R = np.eye(2) * [self.get_kalman_parameters(sensor_id)["R_std"]["x"] **
+                             2, self.get_kalman_parameters(sensor_id)["R_std"]["y"]**2]
 
         q_x = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=0, var=self.get_parameters(sensor_id)["Q_std"]["x"]**2)
+            dim=self.noMeasure, dt=0, var=self.get_kalman_parameters(sensor_id)["Q_std"]["x"]**2)
         q_y = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=0, var=self.get_parameters(sensor_id)["Q_std"]["y"]**2)
+            dim=self.noMeasure, dt=0, var=self.get_kalman_parameters(sensor_id)["Q_std"]["y"]**2)
         kf.Q = block_diag(q_x, q_y)
 
         kf.x = np.array([[0., 0., 0., 0.]]).T
@@ -207,18 +208,18 @@ class TrackFusion(Node):
         track.kalman_filter.kf.F[0, 1] = dt
         track.kalman_filter.kf.F[2, 3] = dt
         q_x = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=dt, var=self.get_parameters(track.current_sensor_id)["Q_std"]["x"]**2)
+            dim=self.noMeasure, dt=dt, var=self.get_kalman_parameters(track.current_sensor_id)["Q_std"]["x"]**2)
         q_y = Q_discrete_white_noise(
-            dim=self.noMeasure, dt=dt, var=self.get_parameters(track.current_sensor_id)["Q_std"]["y"]**2)
+            dim=self.noMeasure, dt=dt, var=self.get_kalman_parameters(track.current_sensor_id)["Q_std"]["y"]**2)
         track.kalman_filter.kf.Q[0:2, 0:2] = q_x
         track.kalman_filter.kf.Q[2:4, 2:4] = q_y
         track.kalman_filter.kf.predict()
         # UPDATE
         # Update R
         track.kalman_filter.kf.R[0,
-                                 0] = self.get_parameters(track.current_sensor_id)["R_std"]["x"]**2
+                                 0] = self.get_kalman_parameters(track.current_sensor_id)["R_std"]["x"]**2
         track.kalman_filter.kf.R[1,
-                                 1] = self.get_parameters(track.current_sensor_id)["R_std"]["y"]**2
+                                 1] = self.get_kalman_parameters(track.current_sensor_id)["R_std"]["y"]**2
         track.kalman_filter.kf.update(np.asarray(track.center))
         track.kalman_filter.last_ts = track.timestamp
 

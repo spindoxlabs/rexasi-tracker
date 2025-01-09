@@ -13,10 +13,11 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 sys.path.append(os.getcwd())
 from rexasi_tracker.utils.dto import SensorTrackedData
-from rexasi_tracker.utils.misc import save_evaluation_data
+from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
 from rexasi_tracker.config.topics.src.tracker import tracker_topics
 from rexasi_tracker.config.parameters.src.tracker import tracker_parameters, default_tracker_parameters
 from rexasi_tracker_msgs.msg import RexString
+from rexasi_tracker.config.parameters.src.general import CONFIG_FILE
 
 DEBUG_MARKERS_TOPIC = "/debug/norfair"
 COLORS = [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
@@ -32,6 +33,8 @@ class Norfair(Node):
         super().__init__(
             "TRACKER", automatically_declare_parameters_from_overrides=True
         )
+
+        self.config = load_yaml(CONFIG_FILE)
 
         self.markers_publisher = self.create_publisher(
             MarkerArray, DEBUG_MARKERS_TOPIC, 10
@@ -76,7 +79,10 @@ class Norfair(Node):
         self.current_tracks_id = {}
 
     def get_parameters(self, sensor_id):
-        # TODO get from config file or use defaults
+        try:
+            return self.config["sensors"][sensor_id]["tracker_parameters"]
+        except:
+            pass
         return default_tracker_parameters
 
     def add_sensor(self, sensor_id):

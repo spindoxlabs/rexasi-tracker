@@ -57,6 +57,11 @@ kalman_parameters = {
     }
 }
 
+default_fusion_parameters = {
+    "tracks_distance_threshold": TRACKS_DISTANCE_THRESHOLD,
+    "hungarian_threshold": HUNGARIAN_THRESHOLD,
+}
+
 default_kalman_parameters = {
         "R_std": {"x": 0.001, "y": 0.001},
         "Q_std": {"x": 0.04, "y": 0.04}

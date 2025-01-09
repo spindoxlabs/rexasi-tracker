@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-
+import yaml
 import cv2
 import numpy as np
 
@@ -16,6 +16,12 @@ try:
 except Exception as e:
     print(e)
 
+def load_yaml(filepath: str):
+    try:
+        with open(filepath, "r") as file:
+            return yaml.safe_load(file)
+    except Exception as e:
+        return {}
 
 def save_evaluation_data(
     cam_idx: int,
