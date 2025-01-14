@@ -18,13 +18,12 @@ from transforms3d._gohlketransforms import quaternion_from_euler
 
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
+from ros.rexasi_tracker.config.topics.defaults import TRACKER_OUTPUT_TOPIC, FUSION_OUTPUT_TOPIC
 from rexasi_tracker.utils.dto import SensorTrackedData, AssociationTrack, SensorTrack
 from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
-from rexasi_tracker.config.topics.src.sensor_fusion import sensor_fusion_topics
-from rexasi_tracker.config.parameters.src.track_fusion import sensor_exclusion, default_kalman_parameters,default_fusion_parameters, sensor_fusion_parameters
+from rexasi_tracker.config.parameters.defaults import sensor_exclusion, default_kalman_parameters,default_fusion_parameters,CONFIG_FILE
 from rexasi_tracker_msgs.msg import Detection, DetectionArray, RexString
 from rexasi_tracker.config.parameters.src.launch import PARAMS
-from rexasi_tracker.config.parameters.src.general import CONFIG_FILE
 
 DEBUG_MARKERS_TOPIC = "/debug/association"
 DEBUG_CSV_FILE = "/data/sensor_fusion.csv"
@@ -45,9 +44,6 @@ class TrackFusion(Node):
         self.noMeasure = 2
         self.noQuantity = 4
 
-        # self.R_std: Dict[int, Dict[String, float]] = kalman_parameters['R_std']
-        # self.Q_std: Dict[int, Dict[String, float]] = kalman_parameters['Q_std']
-
         self.debug = self.get_parameter(
             "debug").get_parameter_value().bool_value
 
@@ -65,24 +61,25 @@ class TrackFusion(Node):
         self.reset_data()
 
         # create subscriber
-        self.get_logger().info(f"Creating {sensor_fusion_topics['input']}")
+        self.get_logger().info(f"Subscribing to {TRACKER_OUTPUT_TOPIC}")
         self.subscriber = self.create_subscription(
-            RexString, f"{sensor_fusion_topics['input']}", self.sensor_callback, 10
+            RexString, TRACKER_OUTPUT_TOPIC, self.sensor_callback, 10
         )
 
         # create publisher
-        self.get_logger().info(f"Creating {sensor_fusion_topics['output']}")
-        self.publisher = self.create_publisher(
-            String, sensor_fusion_topics["output"], 10
-        )
-        self.get_logger().info(
-            f"Creating {sensor_fusion_topics['output_fused_track']}")
-        self.fused_tracks_publisher = self.create_publisher(
-            String, sensor_fusion_topics["output_fused_track"], 10
-        )
+        # self.get_logger().info(f"Publishing {FUSION_OUTPUT_TOPIC}")
+        # self.publisher = self.create_publisher(
+        #     String, FUSION_OUTPUT_TOPIC, 10
+        # )
+        # self.get_logger().info(
+        #     f"Creating {sensor_fusion_topics['output_fused_track']}")
+        # self.fused_tracks_publisher = self.create_publisher(
+        #     String, sensor_fusion_topics["output_fused_track"], 10
+        # )
 
+        self.get_logger().info(f"Publishing {FUSION_OUTPUT_TOPIC}")
         self.output_publisher = self.create_publisher(
-            DetectionArray, 'output/tracks', 10
+            DetectionArray, FUSION_OUTPUT_TOPIC, 10
         )
 
     def get_kalman_parameters(self, sensor_id):

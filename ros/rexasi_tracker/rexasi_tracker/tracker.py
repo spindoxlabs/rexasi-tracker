@@ -12,12 +12,11 @@ from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 
 sys.path.append(os.getcwd())
+from ros.rexasi_tracker.config.topics.defaults import TRACKER_INPUT_TOPIC, TRACKER_OUTPUT_TOPIC
 from rexasi_tracker.utils.dto import SensorTrackedData
 from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
-from rexasi_tracker.config.topics.src.tracker import tracker_topics
-from rexasi_tracker.config.parameters.src.tracker import tracker_parameters, default_tracker_parameters
+from rexasi_tracker.config.parameters.defaults import default_tracker_parameters, CONFIG_FILE
 from rexasi_tracker_msgs.msg import RexString
-from rexasi_tracker.config.parameters.src.general import CONFIG_FILE
 
 DEBUG_MARKERS_TOPIC = "/debug/norfair"
 COLORS = [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
@@ -36,9 +35,6 @@ class Norfair(Node):
 
         self.config = load_yaml(CONFIG_FILE)
 
-        self.markers_publisher = self.create_publisher(
-            MarkerArray, DEBUG_MARKERS_TOPIC, 10
-        )
 
         self.debug = self.get_parameter("debug").get_parameter_value().bool_value
 
@@ -46,27 +42,17 @@ class Norfair(Node):
         # subscriber node that will read data from a specific topic
         # in these case, every time message is sent to IMAGE_CENTERS_TOPIC, self.msg_event is triggered
         self.rgbd_subscriber = self.create_subscription(
-            RexString, f"{tracker_topics['input']['rgbd']}", self.msg_event, 10
+            RexString, TRACKER_INPUT_TOPIC, self.msg_event, 10
         )
-        self.get_logger().info(f"Subscribed to {tracker_topics['input']['rgbd']}")
-
-        self.stereo_subscriber = self.create_subscription(
-            RexString, f"{tracker_topics['input']['stereo']}", self.msg_event, 10
-        )
-        self.get_logger().info(f"Subscribed to {tracker_topics['input']['stereo']}")
-
-        self.lidar_subscriber = self.create_subscription(
-            RexString, f"{tracker_topics['input']['lidar']}", self.msg_event, 10
-        )
-        self.get_logger().info(f"Subscribed to {tracker_topics['input']['lidar']}")
+        self.get_logger().info(f"Subscribed to {TRACKER_INPUT_TOPIC}")
 
         # PUBLISHERS
         # publisher node that will publish data to a specific topic
         # in these case, the data is sent to TRACKER_TOPIC
         self.publisher = self.create_publisher(
-            RexString, f"{tracker_topics['output']}", 10
+            RexString, TRACKER_OUTPUT_TOPIC, 10
         )
-        self.get_logger().info(f"Publishing to {tracker_topics['output']}")
+        self.get_logger().info(f"Publishing to {TRACKER_OUTPUT_TOPIC}")
 
         # CAMERA TRACKERS
         # every camera has its tracker, and the number of cameras is stated in the parameter n_cameras from the launcher

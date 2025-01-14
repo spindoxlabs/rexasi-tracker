@@ -1,3 +1,6 @@
+general:
+  debug: true
+
 fusion_parameters:
   tracks_distance_threshold: TRACKS_DISTANCE_THRESHOLD
   hungarian_threshold: HUNGARIAN_THRESHOLD
