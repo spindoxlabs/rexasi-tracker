@@ -4,6 +4,8 @@ from pathlib import Path
 import yaml
 import cv2
 import numpy as np
+from cerberus import Validator
+from typing import Any
 
 SAVE_EVALUATION_DATA = True
 OUTPUT_PATH = f"/data/output/debug/"
@@ -16,12 +18,24 @@ try:
 except Exception as e:
     print(e)
 
-def load_yaml(filepath: str):
+def load_yaml(filepath: str, schema_filepath = '') -> tuple[bool, str, Any]:
     try:
         with open(filepath, "r") as file:
-            return yaml.safe_load(file)
+            doc = yaml.safe_load(file)
+            if schema_filepath != '':
+                return validate_yaml(doc, schema_filepath)
     except Exception as e:
-        return {}
+        return False, '', 'Error opening yaml file'
+    
+def validate_yaml(doc: str, schema_filepath: str):
+    schema = eval(open(schema_filepath, 'r').read())
+    v = Validator(schema)
+    v.allow_unknown = True
+    valid = v.validate(doc)
+    if not valid:
+        return valid, '', v.errors
+    normalized = v.normalized(doc)
+    return valid, normalized, v.errors
 
 def save_evaluation_data(
     cam_idx: int,

@@ -1,27 +1,21 @@
-import json
 import os
 import sys
-
 import numpy as np
 import rclpy
 from norfair import Detection
 from norfair import Tracker
 from norfair.filter import OptimizedKalmanFilterFactory
 from rclpy.node import Node
-from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
+from geometry_msgs.msg import Pose
 
 sys.path.append(os.getcwd())
-from rexasi_tracker.utils.dto import SensorTrackedData
 from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
-from rexasi_tracker.config.topics.src.tracker import tracker_topics
-from rexasi_tracker.config.parameters.src.tracker import tracker_parameters, default_tracker_parameters
-from rexasi_tracker_msgs.msg import RexString
-from rexasi_tracker.config.parameters.src.general import CONFIG_FILE
+from rexasi_tracker.config.parameters.defaults import MAX_SENSORS_NR, default_tracker_parameters, CONFIG_FILE, CONFIG_SCHEMA_FILE
+from rexasi_tracker_msgs.msg import Detections, Tracks
 
 DEBUG_MARKERS_TOPIC = "/debug/norfair"
 COLORS = [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
-MAX_SENSORS_NR=100
 
 class Norfair(Node):
     """
@@ -34,68 +28,56 @@ class Norfair(Node):
             "TRACKER", automatically_declare_parameters_from_overrides=True
         )
 
-        self.config = load_yaml(CONFIG_FILE)
+        valid, config, err = load_yaml(CONFIG_FILE, CONFIG_SCHEMA_FILE)
+        if not valid:
+            self.get_logger().error("Wrong configuration file: %s" % str(err))
+            sys.exit(-1)
+        self.config = config
 
-        self.markers_publisher = self.create_publisher(
-            MarkerArray, DEBUG_MARKERS_TOPIC, 10
-        )
+        self.get_logger().debug("Loaded configuration: %s" % str(self.config))
 
-        self.debug = self.get_parameter("debug").get_parameter_value().bool_value
+        self.debug = self.config["general"]["debug"]
 
         # SUBSCRIPTIONS
         # subscriber node that will read data from a specific topic
         # in these case, every time message is sent to IMAGE_CENTERS_TOPIC, self.msg_event is triggered
-        self.rgbd_subscriber = self.create_subscription(
-            RexString, f"{tracker_topics['input']['rgbd']}", self.msg_event, 10
+        input_topic = self.config["topics"]["tracker_input_topic"]
+        self.subscriber = self.create_subscription(
+            Detections, input_topic, self.msg_event, 10
         )
-        self.get_logger().info(f"Subscribed to {tracker_topics['input']['rgbd']}")
-
-        self.stereo_subscriber = self.create_subscription(
-            RexString, f"{tracker_topics['input']['stereo']}", self.msg_event, 10
-        )
-        self.get_logger().info(f"Subscribed to {tracker_topics['input']['stereo']}")
-
-        self.lidar_subscriber = self.create_subscription(
-            RexString, f"{tracker_topics['input']['lidar']}", self.msg_event, 10
-        )
-        self.get_logger().info(f"Subscribed to {tracker_topics['input']['lidar']}")
+        self.get_logger().info(f"Subscribed to {input_topic}")
 
         # PUBLISHERS
         # publisher node that will publish data to a specific topic
         # in these case, the data is sent to TRACKER_TOPIC
+        output_topic = self.config["topics"]["tracker_output_topic"]
         self.publisher = self.create_publisher(
-            RexString, f"{tracker_topics['output']}", 10
+            Tracks, output_topic, 10
         )
-        self.get_logger().info(f"Publishing to {tracker_topics['output']}")
+        self.get_logger().info(f"Publishing to {output_topic}")
 
-        # CAMERA TRACKERS
-        # every camera has its tracker, and the number of cameras is stated in the parameter n_cameras from the launcher
-        self.n_cameras = (
-            self.get_parameter("n_cameras").get_parameter_value().integer_value
-        )
-        self.cameras = {}
+        self.sensors = {}
 
         # keep track of hit_counters
         self.current_tracks_id = {}
 
-    def get_parameters(self, sensor_id):
-        try:
-            return self.config["sensors"][sensor_id]["tracker_parameters"]
-        except:
-            pass
+    def get_tracker_parameters(self, sensor_id):
+        for s in self.config["sensors"]:
+            if s["sensor_id"] == sensor_id:
+                return  s["tracker_parameters"]
         return default_tracker_parameters
 
     def add_sensor(self, sensor_id):
-        self.cameras[sensor_id] = {
+        self.sensors[sensor_id] = {
                 "tracker": Tracker(
-                    **self.get_parameters(sensor_id),
+                    **self.get_tracker_parameters(sensor_id),
                     filter_factory=OptimizedKalmanFilterFactory(), # filter for reid
                 ),
                 "tracked_objects": [],
             }
         self.current_tracks_id[sensor_id] = set()
 
-    def msg_event(self, msg):
+    def msg_event(self, tracker_data):
         """
         This event is triggered every time a msg is published on INPUT_TOPIC.
         The resulting data will be published in OUTPUT_TOPIC, using TrackerData utils.
@@ -105,75 +87,65 @@ class Norfair(Node):
             SensorData with identities
         """
 
-        # LOAD CENTERS FROM TOPIC INPUT_TOPIC
-        # apply TrackerData utils to the msg data in order to parse values
-        tracker_data = SensorTrackedData(**json.loads(msg.data))
-        # skips void detections
-        if tracker_data.timestamp == 0:
-            return
-
         self.get_logger().debug(
-            f"Recieving message: {len(tracker_data.centers.coordinates)} from {tracker_data.idx}"
+            f"Receiving message: {len(tracker_data.centers)} from sensor ID {tracker_data.sensor_id}"
         )
         # if idx not exists, skip (this might be yielded but void camerdata data such as
         # Cameradata(cam_idx=0, timestamp=0, detections=[[[]]])
-        if tracker_data.idx not in self.cameras:
-            if len(self.cameras.entries()) > MAX_SENSORS_NR:
-                self.get_logger().error("Reached max sensor number limit (%d)" % MAX_SENSORS_NR)
+        if tracker_data.sensor_id not in self.sensors:
+            if len(self.sensors.entries()) > MAX_SENSORS_NR:
+                self.get_logger().error("Reached sensor number limit (%d)" % MAX_SENSORS_NR)
                 return
-            self.get_logger().info("Adding sensor with index: %d" % tracker_data.idx)
-            self.add_sensor(tracker_data.idx)
+            self.get_logger().info("Adding sensor with index: %d" % tracker_data.sensor_id)
+            self.add_sensor(tracker_data.sensor_id)
 
         # parse detection data according to MEASURE_UNIT variable
-        cam_idx = tracker_data.idx
-        if tracker_parameters["measure_unit"] == "coordinates":
-            centers = tracker_data.centers.coordinates
-        else:
-            centers = tracker_data.centers.pixels
+        centers = tracker_data.centers
 
         # GENERATE DETECTIONS
         # generate detection for each value inside tracker_data.centers
         detections = [
             Detection(
-                points=np.array([np.array(center), np.array(center)]).reshape(2, 2),
-                data=tracker_data.confidence[idx]
+                # points=np.array([np.array(center), np.array(center)]).reshape(2, 2),
+                points=np.array([[center.position.x,center.position.y],[center.position.x,center.position.y]]).reshape(2, 2),
+                data=tracker_data.confidences[idx]
             )
             for idx, center in enumerate(centers)
         ]
 
         # TRACK OBJECTS
         # track each detection using the trackers
-        self.cameras[cam_idx]["tracked_objects"] = self.cameras[cam_idx][
+        self.sensors[tracker_data.sensor_id]["tracked_objects"] = self.sensors[tracker_data.sensor_id][
             "tracker"
-        ].update(detections)  # , period=tracker_parameters["period"])
+        ].update(detections)
 
-        # # save and output tracked objects hit counter
         tracks_id = set()
-        for tracked_object in self.cameras[cam_idx]["tracked_objects"]:
+        for tracked_object in self.sensors[tracker_data.sensor_id]["tracked_objects"]:
             tracks_id.add(str(tracked_object.id))
-        dead_tracks_id = self.current_tracks_id[cam_idx].difference(tracks_id)
-        self.current_tracks_id[cam_idx] = tracks_id
+        dead_tracks_id = self.current_tracks_id[tracker_data.sensor_id].difference(tracks_id)
+        self.current_tracks_id[tracker_data.sensor_id] = tracks_id
 
-        # reset centers in topic data
-        tracker_data.centers.coordinates = []
-        tracker_data.confidence = []
+        # output tracks
+        tracks = Tracks()
+        tracks.header = tracker_data.header
+        tracks.sensor_id = tracker_data.sensor_id
 
-        for tracked_object in self.cameras[cam_idx]["tracked_objects"]:
-            # if tracked_object.hit_counter > 0:
-            tracker_data.identities.append(tracked_object.id)
+        for tracked_object in self.sensors[tracker_data.sensor_id]["tracked_objects"]:
+            tracks.identities.append(tracked_object.id)
             point = tuple(tracked_object.last_detection.points[0])
-            tracker_data.centers.coordinates.append(point)
-            tracker_data.confidence.append(tracked_object.last_detection.data)
-            # else:
-            # tracker_data.dead_identities.append(tracked_object.id)
-        tracker_data.dead_identities = list(dead_tracks_id)
+            center = Pose()
+            center.position.x = point[0]
+            center.position.y = point[1]
+            tracks.centers.append(center)
+            tracks.confidences.append(tracked_object.last_detection.data)
+        tracks.dead_identities = list(dead_tracks_id)
 
         if self.debug:
-            self.get_logger().info("Tracked %s" % str(tracker_data.centers.coordinates))
+            self.get_logger().info("Tracked %s" % str(tracks.centers))
             self.publish_debug_markers(
-                tracker_data.identities, tracker_data.centers.coordinates, COLORS[cam_idx])
+                tracks.identities, tracks.centers, COLORS[tracker_data.sensor_id])
 
-        self.publish(tracker_data, msg.header.stamp)
+        self.publish(tracks)
 
     def get_track_marker(self, identity, center, color):
         markers = []
@@ -194,8 +166,8 @@ class Norfair(Node):
         marker.color.b = color[2]
         marker.color.a = 1.0
         # Set the pose of the marker
-        marker.pose.position.x = center[0]
-        marker.pose.position.y = center[1]
+        marker.pose.position.x = center.position.x
+        marker.pose.position.y = center.position.y
         marker.pose.position.z = 0.1
         marker.pose.orientation.x = 0.0
         marker.pose.orientation.y = 0.0
@@ -221,8 +193,8 @@ class Norfair(Node):
         text_marker.color.b = 0.0
         text_marker.color.a = 1.0
         # Set the pose of the marker
-        text_marker.pose.position.x = center[0]
-        text_marker.pose.position.y = center[1]
+        text_marker.pose.position.x = center.position.x
+        text_marker.pose.position.y = center.position.y
         text_marker.pose.position.z = 0.3
         text_marker.pose.orientation.x = 0.0
         text_marker.pose.orientation.y = 0.0
@@ -237,21 +209,18 @@ class Norfair(Node):
             marker_array.markers.extend(self.get_track_marker(id, c, color))
         self.markers_publisher.publish(marker_array)
 
-    def publish(self, data: SensorTrackedData, stamp) -> None:
-        if self.debug:
-            save_evaluation_data(
-                data.idx,
-                data.centers.coordinates,
-                data.identities,
-                data.frame_number,
-                data.timestamp,
-                sensor_type=data.sensor_type,
-                name=f"{self.get_name()}_{data.sensor_type}",
-            )
-        msg = RexString()
-        msg.header.stamp = stamp
-        msg.data = json.dumps(data.model_dump())
-        self.publisher.publish(msg)
+    def publish(self, tracks: Tracks) -> None:
+        # if self.debug:
+        #     save_evaluation_data(
+        #         tracks.sensor_id,
+        #         tracks.centers,
+        #         tracks.identities,
+        #         tracks.frame_number,
+        #         tracks.timestamp,
+        #         sensor_type=tracks.sensor_type,
+        #         name=f"{self.get_name()}_{tracks.sensor_type}",
+        #     )
+        self.publisher.publish(tracks)
 
 
 def main(args=None):
