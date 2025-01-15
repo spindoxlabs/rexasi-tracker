@@ -29,8 +29,8 @@
       }
     },
     'fusion_parameters': {
-        'required': True,
         'type': 'dict',
+        'default': {},
         'schema': {
           'tracks_distance_threshold': {
             'type': 'number',

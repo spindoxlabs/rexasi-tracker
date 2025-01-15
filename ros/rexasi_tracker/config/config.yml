@@ -1,4 +1,2 @@
-general: {}
-fusion_parameters: {}
-sensors:
-  - sensor_id: 0
+
+sensors: []
