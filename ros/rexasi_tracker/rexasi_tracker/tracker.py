@@ -14,9 +14,8 @@ from geometry_msgs.msg import Pose
 
 sys.path.append(os.getcwd())
 from rexasi_tracker.config.topics.defaults import TRACKER_INPUT_TOPIC, TRACKER_OUTPUT_TOPIC
-from rexasi_tracker.utils.dto import SensorTrackedData
-from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
-from rexasi_tracker.config.parameters.defaults import MAX_SENSORS_NR, default_tracker_parameters, CONFIG_FILE
+from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml, validate_yaml
+from rexasi_tracker.config.parameters.defaults import MAX_SENSORS_NR, default_tracker_parameters, CONFIG_FILE, CONFIG_SCHEMA_FILE
 from rexasi_tracker_msgs.msg import Detections, Tracks
 
 DEBUG_MARKERS_TOPIC = "/debug/norfair"
@@ -34,6 +33,10 @@ class Norfair(Node):
         )
 
         self.config = load_yaml(CONFIG_FILE)
+        valid, err = validate_yaml(self.config, CONFIG_SCHEMA_FILE)
+        if not valid:
+            self.get_logger().error("Wrong configuration file: %s" % str(err))
+            sys.exit(-1)
 
 
         self.debug = self.get_parameter("debug").get_parameter_value().bool_value

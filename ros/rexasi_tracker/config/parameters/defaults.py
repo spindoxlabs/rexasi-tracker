@@ -1,5 +1,6 @@
 
 CONFIG_FILE="config/config.yml"
+CONFIG_SCHEMA_FILE="rexasi_tracker/config/parameters/config_schema.py"
 
 MAX_SENSORS_NR=100
 

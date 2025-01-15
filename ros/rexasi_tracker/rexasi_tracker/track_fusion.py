@@ -19,8 +19,8 @@ if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 from rexasi_tracker.config.topics.defaults import TRACKER_OUTPUT_TOPIC, FUSION_OUTPUT_TOPIC
 from rexasi_tracker.utils.dto import AssociationTrack, SensorTrack
-from rexasi_tracker.utils.misc import get_timestamp, save_evaluation_data, load_yaml
-from rexasi_tracker.config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,default_fusion_parameters,CONFIG_FILE
+from rexasi_tracker.utils.misc import get_timestamp, save_evaluation_data, load_yaml, validate_yaml
+from rexasi_tracker.config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,default_fusion_parameters,CONFIG_FILE, CONFIG_SCHEMA_FILE
 from rexasi_tracker_msgs.msg import Tracks
 
 DEBUG_MARKERS_TOPIC = "/debug/association"
@@ -33,6 +33,10 @@ class TrackFusion(Node):
         super().__init__("FUSION", automatically_declare_parameters_from_overrides=True)
 
         self.config = load_yaml(CONFIG_FILE)
+        valid, err = validate_yaml(self.config, CONFIG_SCHEMA_FILE)
+        if not valid:
+            self.get_logger().error("Wrong configuration file: %s" % str(err))
+            sys.exit(-1)
 
         self.frame_number = 0
 
@@ -59,7 +63,7 @@ class TrackFusion(Node):
         self.reset_data()
 
         # create subscriber
-        self.get_logger().info(f"Subscribing to {TRACKER_OUTPUT_TOPIC}")
+        self.get_logger().info(f"Subscribed to {TRACKER_OUTPUT_TOPIC}")
         self.subscriber = self.create_subscription(
             Tracks, TRACKER_OUTPUT_TOPIC, self.tracks_callback, 10
         )
@@ -75,7 +79,7 @@ class TrackFusion(Node):
         #     String, sensor_fusion_topics["output_fused_track"], 10
         # )
 
-        self.get_logger().info(f"Publishing {FUSION_OUTPUT_TOPIC}")
+        self.get_logger().info(f"Publishing to {FUSION_OUTPUT_TOPIC}")
         self.output_publisher = self.create_publisher(
             Tracks, FUSION_OUTPUT_TOPIC, 10
         )
