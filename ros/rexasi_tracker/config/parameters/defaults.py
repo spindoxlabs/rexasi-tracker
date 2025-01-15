@@ -1,5 +1,5 @@
 
-CONFIG_FILE="config/config.yml"
+CONFIG_FILE="rexasi_tracker/config/config.yml"
 CONFIG_SCHEMA_FILE="rexasi_tracker/config/parameters/config_schema.py"
 
 MAX_SENSORS_NR=100
@@ -15,11 +15,6 @@ default_tracker_parameters = {
         "hit_counter_max": int(FPS / 2),
         "pointwise_hit_counter_max": int(FPS / 2),
     }
-
-default_fusion_parameters = {
-    "tracks_distance_threshold": 1.0,
-    "hungarian_threshold": 0.5,
-}
 
 default_kalman_parameters = {
         "R_std": {"x": 0.001, "y": 0.001},

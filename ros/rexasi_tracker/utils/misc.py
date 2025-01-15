@@ -17,18 +17,22 @@ try:
 except Exception as e:
     print(e)
 
-def load_yaml(filepath: str):
+def load_yaml(filepath: str, schema_filepath = '') -> tuple[bool, str, str]:
     try:
         with open(filepath, "r") as file:
-            return yaml.safe_load(file)
+            doc = yaml.safe_load(file)
+            if schema_filepath != '':
+                return validate_yaml(doc, schema_filepath)
     except Exception as e:
-        return {}
+        return False, '', 'Error opening yaml file'
     
-def validate_yaml(yaml: str, schema_filepath: str):
+def validate_yaml(doc: str, schema_filepath: str):
     schema = eval(open(schema_filepath, 'r').read())
     v = Validator(schema)
-    result = v.validate(yaml, schema)
-    return result, v.errors
+    v.allow_unknown = True
+    valid = v.validate(doc)
+    normalized = v.normalized(doc)
+    return valid, normalized, str(v.errors)
 
 def save_evaluation_data(
     cam_idx: int,

@@ -1,19 +1,24 @@
 general:
   debug: true
 
+topics:
+  tracker_input_topic: "input/detections"
+  tracker_output_topic: "tracker/output"
+  fusion_output_topic: "output/tracks"
+
 fusion_parameters:
-  tracks_distance_threshold: TRACKS_DISTANCE_THRESHOLD
-  hungarian_threshold: HUNGARIAN_THRESHOLD
+  tracks_distance_threshold: 1.0
+  hungarian_threshold: 0.5
 
 sensors:
-  0:
+  - sensor_id: 1
     tracker_paramterers:
-      distance_function: DISTANCE_FUNCTION
-      distance_threshold: DISTANCE_THRESHOLD
-      initialization_delay: INITIALIZATION_DELAY
-      hit_counter_max: HIT_COUNTER_MAX
-      pointwise_hit_counter_max: POINTWISE_HIT_COUNTER_MAX
-    kalman_parameters:
+      distance_function: 'euclidean'
+      distance_threshold: 0.8
+      initialization_delay: 4
+      hit_counter_max: 7
+      pointwise_hit_counter_max: 7
+    specs:
       R_std:
         x: 0.001
         y: 0.001

@@ -1,13 +1,10 @@
-import json
 import os
 import sys
 from typing import  List, Tuple
 from scipy.optimize import linear_sum_assignment
-
 import numpy as np
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 from scipy.linalg import block_diag
 from filterpy.common import Q_discrete_white_noise
@@ -17,10 +14,9 @@ from geometry_msgs.msg import Pose, Twist
 
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
-from rexasi_tracker.config.topics.defaults import TRACKER_OUTPUT_TOPIC, FUSION_OUTPUT_TOPIC
 from rexasi_tracker.utils.dto import AssociationTrack, SensorTrack
-from rexasi_tracker.utils.misc import get_timestamp, save_evaluation_data, load_yaml, validate_yaml
-from rexasi_tracker.config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,default_fusion_parameters,CONFIG_FILE, CONFIG_SCHEMA_FILE
+from rexasi_tracker.utils.misc import get_timestamp, save_evaluation_data, load_yaml
+from rexasi_tracker.config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,CONFIG_FILE, CONFIG_SCHEMA_FILE
 from rexasi_tracker_msgs.msg import Tracks
 
 DEBUG_MARKERS_TOPIC = "/debug/association"
@@ -32,11 +28,11 @@ class TrackFusion(Node):
     def __init__(self):
         super().__init__("FUSION", automatically_declare_parameters_from_overrides=True)
 
-        self.config = load_yaml(CONFIG_FILE)
-        valid, err = validate_yaml(self.config, CONFIG_SCHEMA_FILE)
+        valid, config, err = load_yaml(CONFIG_FILE, CONFIG_SCHEMA_FILE)
         if not valid:
             self.get_logger().error("Wrong configuration file: %s" % str(err))
             sys.exit(-1)
+        self.config = config
 
         self.frame_number = 0
 
@@ -63,10 +59,11 @@ class TrackFusion(Node):
         self.reset_data()
 
         # create subscriber
-        self.get_logger().info(f"Subscribed to {TRACKER_OUTPUT_TOPIC}")
+        input_topic = self.config["topics"]["tracker_output_topic"]
         self.subscriber = self.create_subscription(
-            Tracks, TRACKER_OUTPUT_TOPIC, self.tracks_callback, 10
+            Tracks, input_topic, self.tracks_callback, 10
         )
+        self.get_logger().info(f"Subscribed to {input_topic}")
 
         # create publisher
         # self.get_logger().info(f"Publishing {FUSION_OUTPUT_TOPIC}")
@@ -78,25 +75,20 @@ class TrackFusion(Node):
         # self.fused_tracks_publisher = self.create_publisher(
         #     String, sensor_fusion_topics["output_fused_track"], 10
         # )
-
-        self.get_logger().info(f"Publishing to {FUSION_OUTPUT_TOPIC}")
+        output_topic = self.config["topics"]["fusion_output_topic"]
+        self.get_logger().info(f"Publishing to {output_topic}")
         self.output_publisher = self.create_publisher(
-            Tracks, FUSION_OUTPUT_TOPIC, 10
+            Tracks, output_topic, 10
         )
 
     def get_kalman_parameters(self, sensor_id):
-        try:
-            return self.config["sensors"][sensor_id]["kalman_parameters"]
-        except:
-            pass
+        for s in self.config["sensors"]:
+            if s["sensor_id"] == sensor_id:
+                return  s["specs"]
         return default_kalman_parameters
     
     def get_fusion_parameters(self):
-        if "fusion_parameters" in self.config:
-            if "tracks_distance_threshold" in self.config["fusion_parameters"] \
-                and "hungarian_threshold" in self.config["fusion_parameters"]:
-                return self.config["fusion_parameters"]
-        return default_fusion_parameters
+        return self.config["fusion_parameters"]
 
     def reset_data(self):
         self.identity_index = 0

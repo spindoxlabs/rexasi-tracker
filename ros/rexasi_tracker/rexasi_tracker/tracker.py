@@ -1,20 +1,16 @@
-import json
 import os
 import sys
-
 import numpy as np
 import rclpy
 from norfair import Detection
 from norfair import Tracker
 from norfair.filter import OptimizedKalmanFilterFactory
 from rclpy.node import Node
-from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose
 
 sys.path.append(os.getcwd())
-from rexasi_tracker.config.topics.defaults import TRACKER_INPUT_TOPIC, TRACKER_OUTPUT_TOPIC
-from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml, validate_yaml
+from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
 from rexasi_tracker.config.parameters.defaults import MAX_SENSORS_NR, default_tracker_parameters, CONFIG_FILE, CONFIG_SCHEMA_FILE
 from rexasi_tracker_msgs.msg import Detections, Tracks
 
@@ -32,47 +28,49 @@ class Norfair(Node):
             "TRACKER", automatically_declare_parameters_from_overrides=True
         )
 
-        self.config = load_yaml(CONFIG_FILE)
-        valid, err = validate_yaml(self.config, CONFIG_SCHEMA_FILE)
+        valid, config, err = load_yaml(CONFIG_FILE, CONFIG_SCHEMA_FILE)
         if not valid:
             self.get_logger().error("Wrong configuration file: %s" % str(err))
             sys.exit(-1)
+        self.config = config
 
+        self.get_logger().debug("Loaded configuration: %s" % str(self.config))
 
         self.debug = self.get_parameter("debug").get_parameter_value().bool_value
 
         # SUBSCRIPTIONS
         # subscriber node that will read data from a specific topic
         # in these case, every time message is sent to IMAGE_CENTERS_TOPIC, self.msg_event is triggered
+        input_topic = self.config["topics"]["tracker_input_topic"]
         self.subscriber = self.create_subscription(
-            Detections, TRACKER_INPUT_TOPIC, self.msg_event, 10
+            Detections, input_topic, self.msg_event, 10
         )
-        self.get_logger().info(f"Subscribed to {TRACKER_INPUT_TOPIC}")
+        self.get_logger().info(f"Subscribed to {input_topic}")
 
         # PUBLISHERS
         # publisher node that will publish data to a specific topic
         # in these case, the data is sent to TRACKER_TOPIC
+        output_topic = self.config["topics"]["tracker_output_topic"]
         self.publisher = self.create_publisher(
-            Tracks, TRACKER_OUTPUT_TOPIC, 10
+            Tracks, output_topic, 10
         )
-        self.get_logger().info(f"Publishing to {TRACKER_OUTPUT_TOPIC}")
+        self.get_logger().info(f"Publishing to {output_topic}")
 
         self.sensors = {}
 
         # keep track of hit_counters
         self.current_tracks_id = {}
 
-    def get_parameters(self, sensor_id):
-        try:
-            return self.config["sensors"][sensor_id]["tracker_parameters"]
-        except:
-            pass
+    def get_tracker_parameters(self, sensor_id):
+        for s in self.config["sensors"]:
+            if s["sensor_id"] == sensor_id:
+                return  s["tracker_parameters"]
         return default_tracker_parameters
 
     def add_sensor(self, sensor_id):
         self.sensors[sensor_id] = {
                 "tracker": Tracker(
-                    **self.get_parameters(sensor_id),
+                    **self.get_tracker_parameters(sensor_id),
                     filter_factory=OptimizedKalmanFilterFactory(), # filter for reid
                 ),
                 "tracked_objects": [],
