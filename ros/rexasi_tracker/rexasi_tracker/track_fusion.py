@@ -1,13 +1,11 @@
 import json
 import os
 import sys
-import time
-from typing import Dict, List, Tuple
+from typing import  List, Tuple
 from scipy.optimize import linear_sum_assignment
 
 import numpy as np
 import rclpy
-from norfair import Tracker
 from rclpy.node import Node
 from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
@@ -20,7 +18,7 @@ from geometry_msgs.msg import Pose, Twist
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 from rexasi_tracker.config.topics.defaults import TRACKER_OUTPUT_TOPIC, FUSION_OUTPUT_TOPIC
-from rexasi_tracker.utils.dto import SensorTrackedData, AssociationTrack, SensorTrack
+from rexasi_tracker.utils.dto import AssociationTrack, SensorTrack
 from rexasi_tracker.utils.misc import get_timestamp, save_evaluation_data, load_yaml
 from rexasi_tracker.config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,default_fusion_parameters,CONFIG_FILE
 from rexasi_tracker_msgs.msg import Tracks
@@ -165,8 +163,6 @@ class TrackFusion(Node):
 
         assert len(self.associated_tracks) == 3
         assert len(self.sensor_tracks) == 5
-        self.get_logger().info(str(self.associated_tracks[0].center))
-        self.get_logger().info(str(self.associated_tracks[1].center))
         assert self.associated_tracks[0].center == (-0.8, 4.7)
         assert self.associated_tracks[1].center == (1.1, 4.6)
 
@@ -650,23 +646,23 @@ class TrackFusion(Node):
         self.associated_tracks = [
             f for f in self.associated_tracks if len(f.sensor_track_refs) > 0]
 
-    def publish(self, topic_data: SensorTrackedData):
-        """
-        This data is used to publish the results to the subscriber
-        """
-        fused_coordinates = []
-        fused_identities = []
-        for s in self.sensor_tracks:
-            if s.sensor_id == topic_data.idx and s.fused_track_ref != 0:
-                fused_identities.append(s.fused_track_ref)
-                for f in self.associated_tracks:
-                    if f.identity == s.fused_track_ref:
-                        fused_coordinates.append(f.center)
-                        break
-        topic_data.fused_identities = fused_identities
-        msg = String()
-        msg.data = json.dumps(topic_data.model_dump())
-        self.publisher.publish(msg)
+    # def publish(self, topic_data: SensorTrackedData):
+        # """
+        # This data is used to publish the results to the subscriber
+        # """
+        # fused_coordinates = []
+        # fused_identities = []
+        # for s in self.sensor_tracks:
+        #     if s.sensor_id == topic_data.idx and s.fused_track_ref != 0:
+        #         fused_identities.append(s.fused_track_ref)
+        #         for f in self.associated_tracks:
+        #             if f.identity == s.fused_track_ref:
+        #                 fused_coordinates.append(f.center)
+        #                 break
+        # topic_data.fused_identities = fused_identities
+        # msg = String()
+        # msg.data = json.dumps(topic_data.model_dump())
+        # self.publisher.publish(msg)
         # for f in self.associated_tracks:
         #     msg = String()
         #     msg.data = json.dumps(f.model_dump())
