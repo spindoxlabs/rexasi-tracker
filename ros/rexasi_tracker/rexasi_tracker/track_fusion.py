@@ -42,8 +42,7 @@ class TrackFusion(Node):
         self.noMeasure = 2
         self.noQuantity = 4
 
-        self.debug = self.get_parameter(
-            "debug").get_parameter_value().bool_value
+        self.debug = self.config["general"]["debug"]
 
         if self.debug:
             self.markers_publisher = self.create_publisher(

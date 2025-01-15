@@ -36,7 +36,7 @@ class Norfair(Node):
 
         self.get_logger().debug("Loaded configuration: %s" % str(self.config))
 
-        self.debug = self.get_parameter("debug").get_parameter_value().bool_value
+        self.debug = self.config["general"]["debug"]
 
         # SUBSCRIPTIONS
         # subscriber node that will read data from a specific topic
