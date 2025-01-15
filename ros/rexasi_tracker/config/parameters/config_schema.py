@@ -43,8 +43,8 @@
         }
     },
     'sensors': {
-        'required': True,
         'type': 'list',
+        'default': [],
           'schema': {
             'type': 'dict',
             'schema': {
