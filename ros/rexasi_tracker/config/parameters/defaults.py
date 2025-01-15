@@ -1,7 +1,11 @@
 
 CONFIG_FILE="config/config.yml"
 
+MAX_SENSORS_NR=100
+
 FPS=15
+
+X_FORWARD=1
 
 default_tracker_parameters = {
         "distance_function": "euclidean",
@@ -20,3 +24,5 @@ default_kalman_parameters = {
         "R_std": {"x": 0.001, "y": 0.001},
         "Q_std": {"x": 0.04, "y": 0.04}
     }
+
+sensor_exclusion = {}

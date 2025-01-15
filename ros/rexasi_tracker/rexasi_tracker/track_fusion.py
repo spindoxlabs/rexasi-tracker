@@ -15,15 +15,15 @@ from scipy.linalg import block_diag
 from filterpy.common import Q_discrete_white_noise
 from filterpy.kalman import KalmanFilter
 from transforms3d._gohlketransforms import quaternion_from_euler
+from geometry_msgs.msg import Pose, Twist
 
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
-from ros.rexasi_tracker.config.topics.defaults import TRACKER_OUTPUT_TOPIC, FUSION_OUTPUT_TOPIC
+from rexasi_tracker.config.topics.defaults import TRACKER_OUTPUT_TOPIC, FUSION_OUTPUT_TOPIC
 from rexasi_tracker.utils.dto import SensorTrackedData, AssociationTrack, SensorTrack
-from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
-from rexasi_tracker.config.parameters.defaults import sensor_exclusion, default_kalman_parameters,default_fusion_parameters,CONFIG_FILE
-from rexasi_tracker_msgs.msg import Detection, DetectionArray, RexString
-from rexasi_tracker.config.parameters.src.launch import PARAMS
+from rexasi_tracker.utils.misc import get_timestamp, save_evaluation_data, load_yaml
+from rexasi_tracker.config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,default_fusion_parameters,CONFIG_FILE
+from rexasi_tracker_msgs.msg import Tracks
 
 DEBUG_MARKERS_TOPIC = "/debug/association"
 DEBUG_CSV_FILE = "/data/sensor_fusion.csv"
@@ -63,7 +63,7 @@ class TrackFusion(Node):
         # create subscriber
         self.get_logger().info(f"Subscribing to {TRACKER_OUTPUT_TOPIC}")
         self.subscriber = self.create_subscription(
-            RexString, TRACKER_OUTPUT_TOPIC, self.sensor_callback, 10
+            Tracks, TRACKER_OUTPUT_TOPIC, self.tracks_callback, 10
         )
 
         # create publisher
@@ -79,7 +79,7 @@ class TrackFusion(Node):
 
         self.get_logger().info(f"Publishing {FUSION_OUTPUT_TOPIC}")
         self.output_publisher = self.create_publisher(
-            DetectionArray, FUSION_OUTPUT_TOPIC, 10
+            Tracks, FUSION_OUTPUT_TOPIC, 10
         )
 
     def get_kalman_parameters(self, sensor_id):
@@ -100,23 +100,49 @@ class TrackFusion(Node):
         self.identity_index = 0
         self.sensor_tracks: List[SensorTrack] = []
         self.associated_tracks: List[AssociationTrack] = []
-        self.x_forward = PARAMS["x_forward"]
+        self.x_forward = X_FORWARD
 
-    def get_timestamp_ms(self):
-        return round(time.time()*1000)
+    def center_to_pose_msg(self, center: Tuple):
+        pose = Pose()
+        pose.position.x = float(center[0])
+        pose.position.y = float(center[1])
+        return pose
+    
+    def vel_to_twist_msg(self, vel: Tuple):
+        twist = Twist()
+        twist.linear.x = float(vel[0])
+        twist.linear.y = float(vel[1])
+        return twist
+
+    def arrayToPoses(self, list: List):
+        poses = []
+        for c in list:
+            poses.append(self.center_to_pose_msg(c))
+        return poses
 
     def test(self):
         self.get_logger().info("+++++++ Starting tests +++++")
 
         self.x_forward = False
 
-        topic_data_1 = SensorTrackedData(**{"frame_number": 1, "timestamp": self.get_timestamp_ms(), "identities": [
-                                         1, 2], "dead_identities": [], "idx": 1, "centers": {"coordinates": [(-1, 5), (1, 5)]},
-                                         "confidence": [0.8, 0.9]})
+        topic_data_1 = Tracks()
+        topic_data_1.header.stamp = self.get_clock().now().to_msg()
+        topic_data_1.sensor_id = 1
+        topic_data_1.identities = [1, 2]
+        topic_data_1.dead_identities = []
+        topic_data_1.centers = self.arrayToPoses([(-1, 5), (1, 5)])
+        topic_data_1.confidences = [0.8, 0.9]
+
         self.process_sensor_data(topic_data_1)
-        topic_data_2 = SensorTrackedData(**{"frame_number": 2, "timestamp": self.get_timestamp_ms(), "identities": [
-                                         3, 4, 5], "dead_identities": [], "idx": 2, "centers": {"coordinates": [(-0.8, 5.1), (1.2, 4.9), (0, 3)]},
-                                         "confidence": [0.8, 0.6, 0.9]})
+
+        topic_data_2 = Tracks()
+        topic_data_2.header.stamp = self.get_clock().now().to_msg()
+        topic_data_2.sensor_id = 2
+        topic_data_2.identities = [3, 4, 5]
+        topic_data_2.dead_identities = []
+        topic_data_2.centers = self.arrayToPoses([(-0.8, 5.1), (1.2, 4.9), (0, 3)])
+        topic_data_2.confidences = [0.8, 0.6, 0.9]
+
         self.process_sensor_data(topic_data_2)
 
         assert len(self.associated_tracks) == 3
@@ -127,18 +153,31 @@ class TrackFusion(Node):
         assert self.sensor_tracks[3].fused_track_ref == 2
         assert self.sensor_tracks[4].fused_track_ref == 3
 
-        topic_data_3 = SensorTrackedData(**{"frame_number": 3, "timestamp": self.get_timestamp_ms(), "identities": [
-                                         1, 2], "dead_identities": [], "idx": 1, "centers": {"coordinates": [(-0.8, 4.7), (1.1, 4.6)]},
-                                         "confidence": [0.8, 0.9]})
+        topic_data_3 = Tracks()
+        topic_data_3.header.stamp = self.get_clock().now().to_msg()
+        topic_data_3.sensor_id = 1
+        topic_data_3.identities = [1, 2]
+        topic_data_3.dead_identities = []
+        topic_data_3.centers = self.arrayToPoses([(-0.8, 4.7), (1.1, 4.6)])
+        topic_data_3.confidences = [0.8, 0.9]
+
         self.process_sensor_data(topic_data_3)
 
         assert len(self.associated_tracks) == 3
         assert len(self.sensor_tracks) == 5
+        self.get_logger().info(str(self.associated_tracks[0].center))
+        self.get_logger().info(str(self.associated_tracks[1].center))
         assert self.associated_tracks[0].center == (-0.8, 4.7)
         assert self.associated_tracks[1].center == (1.1, 4.6)
 
-        topic_data_4 = SensorTrackedData(**{"frame_number": 3, "timestamp": self.get_timestamp_ms(), "identities": [],
-                                         "dead_identities": [3, 4, 5], "idx": 2, "centers": {"coordinates": []}, "confidence": []})
+        topic_data_4 = Tracks()
+        topic_data_4.header.stamp = self.get_clock().now().to_msg()
+        topic_data_4.sensor_id = 2
+        topic_data_4.identities = []
+        topic_data_4.dead_identities = [3,4,5]
+        topic_data_4.centers = self.arrayToPoses([])
+        topic_data_4.confidences = []
+
         self.process_sensor_data(topic_data_4)
 
         assert len(self.associated_tracks) == 2
@@ -154,16 +193,6 @@ class TrackFusion(Node):
         self.get_logger().info("Sensor tracks (%d)" % len(self.sensor_tracks))
         for track in self.sensor_tracks:
             self.get_logger().info("  Sensor track: %s" % str(track))
-
-    def sensor_callback(self, msg):
-        """
-        This function is used to populate the buffer, and it's called by the subscriber.
-         Do not call directly!
-        """
-        topic_data: SensorTrackedData = SensorTrackedData(
-            **json.loads(msg.data))
-        self.process(topic_data, msg.header.stamp)
-        # self.buffer.append(topic_data)
 
     def kalman_init(self, sensor_id):
 
@@ -245,13 +274,13 @@ class TrackFusion(Node):
 
         self.update_association_data()
 
-    def process_sensor_data(self, sensor_data: SensorTrackedData):
+    def process_sensor_data(self, tracks_data: Tracks):
 
-        if len(sensor_data.identities) == 0 and len(sensor_data.dead_identities) == 0:
+        if len(tracks_data.identities) == 0 and len(tracks_data.dead_identities) == 0:
             self.get_logger().info("No identities")
             return
 
-        self.add_sensor_tracks(sensor_data)
+        self.add_sensor_tracks(tracks_data)
 
         distance_matrix = self.compute_distance_matrix()
         if distance_matrix is not np.nan:
@@ -268,53 +297,53 @@ class TrackFusion(Node):
                 self.associate_sensor_tracks(distance_matrix, s_id)
                 distance_matrix = self.compute_distance_matrix()
         else:
-            self.associate_sensor_tracks(distance_matrix, sensor_data.idx)
+            self.associate_sensor_tracks(distance_matrix, tracks_data.sensor_id)
 
         self.remove_reference_to_dead_tracks()
         self.remove_fused_with_no_references()
 
-    def process(self, topic_data, stamp):
+    def tracks_callback(self, tracks_data: Tracks):
 
-        self.process_sensor_data(topic_data)
+        self.process_sensor_data(tracks_data)
 
-        self.publish_output(stamp)
+        self.publish_output(tracks_data.header.stamp, tracks_data.header.frame_id)
 
         if self.debug:
             self.publish_markers()
 
         self.get_logger().info("Tracks: %d" % (len(self.associated_tracks)))
 
-        if self.debug:
-            centers = []
-            identities = []
-            for t in self.associated_tracks:
-                if topic_data.idx == t.current_sensor_id:
-                    centers.append(
-                        (t.kalman_filter.kf.x.T[0][0], t.kalman_filter.kf.x.T[0][2]))
-                    identities.append(t.identity)
-            if len(centers) > 0:
-                save_evaluation_data(
-                    0,
-                    centers,
-                    identities,
-                    self.frame_number,
-                    topic_data.timestamp,
-                    sensor_type="kalman_fusion",
-                    name=f"{self.get_name()}",
-                )
-            self.frame_number += 1
+        # if self.debug:
+        #     centers = []
+        #     identities = []
+        #     for t in self.associated_tracks:
+        #         if tracks_data.sensor_id == t.current_sensor_id:
+        #             centers.append(
+        #                 (t.kalman_filter.kf.x.T[0][0], t.kalman_filter.kf.x.T[0][2]))
+        #             identities.append(t.identity)
+        #     if len(centers) > 0:
+        #         save_evaluation_data(
+        #             0,
+        #             centers,
+        #             identities,
+        #             self.frame_number,
+        #             topic_data.timestamp,
+        #             sensor_type="kalman_fusion",
+        #             name=f"{self.get_name()}",
+        #         )
+        #     self.frame_number += 1
 
     def angle_between_vectors_np(self, v1_u, v2_u):
         angle_rad = np.arctan2(np.cross(v1_u, v2_u), np.dot(v1_u, v2_u))
         angle_deg = np.degrees(angle_rad)
         return angle_rad, angle_deg
 
-    def get_track_marker(self, identity, center, velocity, confidence):
+    def get_track_marker(self, identity, center, velocity, confidence, frame_id):
         marker_lifetime = rclpy.duration.Duration(seconds=0.5).to_msg()
         markers = []
         #add circle
         circle_marker = Marker()
-        circle_marker.header.frame_id = PARAMS["odometry_frame_id"]
+        circle_marker.header.frame_id = frame_id
         circle_marker.header.stamp = self.get_clock().now().to_msg()
         circle_marker.type = 2
         circle_marker.id = identity
@@ -334,7 +363,7 @@ class TrackFusion(Node):
 
         # add arrow
         arrow_marker = Marker()
-        arrow_marker.header.frame_id = PARAMS["odometry_frame_id"]
+        arrow_marker.header.frame_id = frame_id
         arrow_marker.header.stamp = self.get_clock().now().to_msg()
         arrow_marker.type = 0
         arrow_marker.id = identity*100
@@ -365,7 +394,7 @@ class TrackFusion(Node):
         markers.append(arrow_marker)
         # add identity text
         text_marker = Marker()
-        text_marker.header.frame_id = PARAMS["odometry_frame_id"]
+        text_marker.header.frame_id = frame_id
         text_marker.header.stamp = self.get_clock().now().to_msg()
         text_marker.type = 9
         text_marker.id = identity * 10000
@@ -400,27 +429,21 @@ class TrackFusion(Node):
             center = self.get_position(f.kalman_filter.kf)
             vel = self.get_velocity(f.kalman_filter.kf)
             marker_array.markers.extend(self.get_track_marker(
-                f.identity, center, vel, f.confidence))
+                f.identity, center, vel, f.confidence, frame_id='world'))
         self.markers_publisher.publish(marker_array)
 
-    def publish_output(self, stamp):
-        detections = DetectionArray()
-        detections.header.stamp = stamp
-        detections.header.frame_id = PARAMS["odometry_frame_id"]
-        detections.detections = []
+    def publish_output(self, stamp, frame_id):
+        tracks = Tracks()
+        tracks.header.stamp = stamp
+        tracks.header.frame_id = frame_id
         for a in self.associated_tracks:
-            detection = Detection()
-            detection.track_id = a.identity
+            tracks.identities.append(a.identity)
             center = self.get_position(a.kalman_filter.kf)
             vel = self.get_velocity(a.kalman_filter.kf)
-            detection.pose.position.x = center[0]
-            detection.pose.position.y = center[1]
-            detection.velocity.linear.x = vel[0]
-            detection.velocity.linear.y = vel[1]
-            detection.confidence = a.confidence
-            detection.sensor_id = a.current_sensor_id
-            detections.detections.append(detection)
-        self.output_publisher.publish(detections)
+            tracks.pose = self.center_to_pose_msg(center)
+            tracks.velocity = self.vel_to_twist_msg(vel)
+            tracks.confidences.append(a.confidence)
+        self.output_publisher.publish(tracks)
 
     def get_position(self, kf: KalmanFilter):
         return [kf.x.T[0][0], kf.x.T[0][2]] 
@@ -443,9 +466,9 @@ class TrackFusion(Node):
         fused_track.sensor_track_refs.append(sensor_track)
         sensor_track.fused_track_ref = fused_track.identity
 
-    def to_exclude(self, center: Tuple[float, ...], sensor_id):
+    def to_exclude(self, center: Pose, sensor_id: int):
         # orientation: 0 = X forward, 1 = Y forward
-        distance = center[0 if self.x_forward else 1]
+        distance = center.position.x if self.x_forward else center.position.y
         if sensor_id in sensor_exclusion:
             if sensor_exclusion[sensor_id]["condition"] == "gt" and distance > sensor_exclusion[sensor_id]["value"]:
                 return True
@@ -453,31 +476,31 @@ class TrackFusion(Node):
                 return True
         return False
 
-    def add_sensor_tracks(self, sensor_data: SensorTrackedData):
+    def add_sensor_tracks(self, tracks_data: Tracks):
         self.get_logger().debug("Add identities %s (dead: %s) from sensor %d" % (
-            str(sensor_data.identities), str(sensor_data.dead_identities), sensor_data.idx))
-        for sIndex, id in enumerate(sensor_data.identities + sensor_data.dead_identities):
-            if id in sensor_data.identities and self.to_exclude(sensor_data.centers.coordinates[sIndex], sensor_data.idx):
-                self.get_logger().info("Excluding Id %d of sensor %d" % (id, sensor_data.idx))
+            str(tracks_data.identities), str(tracks_data.dead_identities), tracks_data.sensor_id))
+        for sIndex, id in enumerate(tracks_data.identities + tracks_data.dead_identities):
+            if id in tracks_data.identities and self.to_exclude(tracks_data.centers[sIndex], tracks_data.sensor_id):
+                self.get_logger().info("Excluding Id %d of sensor %d" % (id, tracks_data.sensor_id))
                 continue
             found = False
             for tIndex, s in enumerate(self.sensor_tracks):
-                if s.sensor_id == sensor_data.idx and s.identity == id:  # update existing sensor track
+                if s.sensor_id == tracks_data.sensor_id and s.identity == id:  # update existing sensor track
                     found = True
-                    if id in sensor_data.dead_identities:
+                    if id in tracks_data.dead_identities:
                         s.dead = True
                     else:
-                        self.sensor_tracks[tIndex].timestamp = sensor_data.timestamp
-                        self.sensor_tracks[tIndex].center = sensor_data.centers.coordinates[sIndex]
-                        self.sensor_tracks[tIndex].confidence = sensor_data.confidence[sIndex]
+                        self.sensor_tracks[tIndex].timestamp = get_timestamp(tracks_data)
+                        self.sensor_tracks[tIndex].center = (tracks_data.centers[sIndex].position.x, tracks_data.centers[sIndex].position.y)
+                        self.sensor_tracks[tIndex].confidence = tracks_data.confidences[sIndex]
                     break
-            if not found and id not in sensor_data.dead_identities:  # add new sensor track
+            if not found and id not in tracks_data.dead_identities:  # add new sensor track
                 new_track = SensorTrack()
                 new_track.identity = id
-                new_track.sensor_id = sensor_data.idx
-                new_track.center = sensor_data.centers.coordinates[sIndex]
-                new_track.timestamp = sensor_data.timestamp
-                new_track.confidence = sensor_data.confidence[sIndex]
+                new_track.sensor_id = tracks_data.sensor_id
+                new_track.center = (tracks_data.centers[sIndex].position.x, tracks_data.centers[sIndex].position.y)
+                new_track.timestamp = get_timestamp(tracks_data)
+                new_track.confidence = tracks_data.confidences[sIndex]
                 self.sensor_tracks.append(new_track)
                 self.get_logger().debug("Add new sensor track %s" % str(new_track))
 

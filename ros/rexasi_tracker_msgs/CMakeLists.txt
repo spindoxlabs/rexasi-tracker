@@ -30,9 +30,8 @@ find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/RexString.msg"
-  "msg/Detection.msg"
-  "msg/DetectionArray.msg"
+  "msg/Detections.msg"
+  "msg/Tracks.msg"
   DEPENDENCIES std_msgs geometry_msgs # Add packages that above messages depend on
 )
 
