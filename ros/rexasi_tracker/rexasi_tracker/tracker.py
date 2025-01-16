@@ -6,16 +6,13 @@ from norfair import Detection
 from norfair import Tracker
 from norfair.filter import OptimizedKalmanFilterFactory
 from rclpy.node import Node
-from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose
 
 sys.path.append(os.getcwd())
-from rexasi_tracker.utils.misc import save_evaluation_data, load_yaml
+from rexasi_tracker.utils.misc import load_yaml
 from rexasi_tracker.config.parameters.defaults import MAX_SENSORS_NR, default_tracker_parameters, CONFIG_FILE, CONFIG_SCHEMA_FILE
 from rexasi_tracker_msgs.msg import Detections, Tracks
 
-DEBUG_MARKERS_TOPIC = "/debug/norfair"
-COLORS = [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
 
 class Norfair(Node):
     """
@@ -39,8 +36,6 @@ class Norfair(Node):
         self.debug = self.config["general"]["debug"]
 
         # SUBSCRIPTIONS
-        # subscriber node that will read data from a specific topic
-        # in these case, every time message is sent to IMAGE_CENTERS_TOPIC, self.msg_event is triggered
         input_topic = self.config["topics"]["tracker_input_topic"]
         self.subscriber = self.create_subscription(
             Detections, input_topic, self.msg_event, 10
@@ -48,8 +43,6 @@ class Norfair(Node):
         self.get_logger().info(f"Subscribed to {input_topic}")
 
         # PUBLISHERS
-        # publisher node that will publish data to a specific topic
-        # in these case, the data is sent to TRACKER_TOPIC
         output_topic = self.config["topics"]["tracker_output_topic"]
         self.publisher = self.create_publisher(
             Tracks, output_topic, 10
@@ -78,20 +71,10 @@ class Norfair(Node):
         self.current_tracks_id[sensor_id] = set()
 
     def msg_event(self, tracker_data):
-        """
-        This event is triggered every time a msg is published on INPUT_TOPIC.
-        The resulting data will be published in OUTPUT_TOPIC, using TrackerData utils.
-        Input:
-            SensorData without identities
-        Output:
-            SensorData with identities
-        """
-
         self.get_logger().debug(
             f"Receiving message: {len(tracker_data.centers)} from sensor ID {tracker_data.sensor_id}"
         )
-        # if idx not exists, skip (this might be yielded but void camerdata data such as
-        # Cameradata(cam_idx=0, timestamp=0, detections=[[[]]])
+        # INIT A SENSOR TRACKER IF NOT SEEN YET
         if tracker_data.sensor_id not in self.sensors:
             if len(self.sensors.entries()) > MAX_SENSORS_NR:
                 self.get_logger().error("Reached sensor number limit (%d)" % MAX_SENSORS_NR)
@@ -99,7 +82,6 @@ class Norfair(Node):
             self.get_logger().info("Adding sensor with index: %d" % tracker_data.sensor_id)
             self.add_sensor(tracker_data.sensor_id)
 
-        # parse detection data according to MEASURE_UNIT variable
         centers = tracker_data.centers
 
         # GENERATE DETECTIONS
@@ -125,7 +107,7 @@ class Norfair(Node):
         dead_tracks_id = self.current_tracks_id[tracker_data.sensor_id].difference(tracks_id)
         self.current_tracks_id[tracker_data.sensor_id] = tracks_id
 
-        # output tracks
+        # OUTPUT TRACKS
         tracks = Tracks()
         tracks.header = tracker_data.header
         tracks.sensor_id = tracker_data.sensor_id
@@ -140,86 +122,6 @@ class Norfair(Node):
             tracks.confidences.append(tracked_object.last_detection.data)
         tracks.dead_identities = list(dead_tracks_id)
 
-        if self.debug:
-            self.get_logger().info("Tracked %s" % str(tracks.centers))
-            self.publish_debug_markers(
-                tracks.identities, tracks.centers, COLORS[tracker_data.sensor_id])
-
-        self.publish(tracks)
-
-    def get_track_marker(self, identity, center, color):
-        markers = []
-        marker = Marker()
-        marker.header.frame_id = "/map"
-        marker.header.stamp = self.get_clock().now().to_msg()
-        marker.type = 3
-        marker.id = identity
-        marker.lifetime = rclpy.duration.Duration(seconds=0.3).to_msg()
-        # marker.action = Marker.DELETE
-        # Set the scale of the marker
-        marker.scale.x = 0.3
-        marker.scale.y = 0.3
-        marker.scale.z = 0.0
-        # Set the color
-        marker.color.r = color[0]
-        marker.color.g = color[1]
-        marker.color.b = color[2]
-        marker.color.a = 1.0
-        # Set the pose of the marker
-        marker.pose.position.x = center.position.x
-        marker.pose.position.y = center.position.y
-        marker.pose.position.z = 0.1
-        marker.pose.orientation.x = 0.0
-        marker.pose.orientation.y = 0.0
-        marker.pose.orientation.z = 0.0
-        marker.pose.orientation.w = 1.0
-        markers.append(marker)
-        text_marker = Marker()
-        text_marker.header.frame_id = "/map"
-        text_marker.header.stamp = self.get_clock().now().to_msg()
-        text_marker.type = 9
-        text_marker.id = identity * 1000
-        text_marker.text = f"{identity}"
-        text_marker.lifetime = rclpy.duration.Duration(
-            seconds=0.3).to_msg()
-        # marker.action = Marker.DELETE
-        # Set the scale of the marker
-        text_marker.scale.x = 1.0
-        text_marker.scale.y = 1.0
-        text_marker.scale.z = 0.2
-        # Set the color
-        text_marker.color.r = 0.0
-        text_marker.color.g = 0.0
-        text_marker.color.b = 0.0
-        text_marker.color.a = 1.0
-        # Set the pose of the marker
-        text_marker.pose.position.x = center.position.x
-        text_marker.pose.position.y = center.position.y
-        text_marker.pose.position.z = 0.3
-        text_marker.pose.orientation.x = 0.0
-        text_marker.pose.orientation.y = 0.0
-        text_marker.pose.orientation.z = 0.0
-        text_marker.pose.orientation.w = 1.0
-        markers.append(text_marker)
-        return markers
-
-    def publish_debug_markers(self, identities, centers, color):
-        marker_array = MarkerArray()
-        for id, c in zip(identities, centers):
-            marker_array.markers.extend(self.get_track_marker(id, c, color))
-        self.markers_publisher.publish(marker_array)
-
-    def publish(self, tracks: Tracks) -> None:
-        # if self.debug:
-        #     save_evaluation_data(
-        #         tracks.sensor_id,
-        #         tracks.centers,
-        #         tracks.identities,
-        #         tracks.frame_number,
-        #         tracks.timestamp,
-        #         sensor_type=tracks.sensor_type,
-        #         name=f"{self.get_name()}_{tracks.sensor_type}",
-        #     )
         self.publisher.publish(tracks)
 
 
