@@ -55,25 +55,14 @@ class TrackFusion(Node):
         
         self.test()
 
-        self.reset_data()
-
-        # create subscriber
+        # SUBSCRIPTIONS
         input_topic = self.config["topics"]["tracker_output_topic"]
         self.subscriber = self.create_subscription(
             Tracks, input_topic, self.tracks_callback, 10
         )
         self.get_logger().info(f"Subscribed to {input_topic}")
 
-        # create publisher
-        # self.get_logger().info(f"Publishing {FUSION_OUTPUT_TOPIC}")
-        # self.publisher = self.create_publisher(
-        #     String, FUSION_OUTPUT_TOPIC, 10
-        # )
-        # self.get_logger().info(
-        #     f"Creating {sensor_fusion_topics['output_fused_track']}")
-        # self.fused_tracks_publisher = self.create_publisher(
-        #     String, sensor_fusion_topics["output_fused_track"], 10
-        # )
+        # PUBLISHERS
         output_topic = self.config["topics"]["fusion_output_topic"]
         self.get_logger().info(f"Publishing to {output_topic}")
         self.output_publisher = self.create_publisher(
@@ -300,7 +289,7 @@ class TrackFusion(Node):
         self.publish_output(tracks_data.header.stamp, tracks_data.header.frame_id)
 
         if self.debug:
-            self.publish_markers()
+            self.publish_markers(tracks_data.header.stamp, tracks_data.header.frame_id)
 
         self.get_logger().info("Tracks: %d" % (len(self.associated_tracks)))
 
@@ -329,13 +318,13 @@ class TrackFusion(Node):
         angle_deg = np.degrees(angle_rad)
         return angle_rad, angle_deg
 
-    def get_track_marker(self, identity, center, velocity, confidence, frame_id):
+    def get_track_marker(self, identity, center, velocity, confidence, stamp, frame_id):
         marker_lifetime = rclpy.duration.Duration(seconds=0.5).to_msg()
         markers = []
         #add circle
         circle_marker = Marker()
         circle_marker.header.frame_id = frame_id
-        circle_marker.header.stamp = self.get_clock().now().to_msg()
+        circle_marker.header.stamp = stamp
         circle_marker.type = 2
         circle_marker.id = identity
         circle_marker.lifetime = marker_lifetime
@@ -355,7 +344,7 @@ class TrackFusion(Node):
         # add arrow
         arrow_marker = Marker()
         arrow_marker.header.frame_id = frame_id
-        arrow_marker.header.stamp = self.get_clock().now().to_msg()
+        arrow_marker.header.stamp = stamp
         arrow_marker.type = 0
         arrow_marker.id = identity*100
         arrow_marker.lifetime = marker_lifetime
@@ -386,7 +375,7 @@ class TrackFusion(Node):
         # add identity text
         text_marker = Marker()
         text_marker.header.frame_id = frame_id
-        text_marker.header.stamp = self.get_clock().now().to_msg()
+        text_marker.header.stamp = stamp
         text_marker.type = 9
         text_marker.id = identity * 10000
         text_marker.text = f"(id:{identity})(conf:{round(confidence,1)})(vel_angle:{round(angle_deg)},vel:[{round(velocity[0],1)},{round(velocity[1],1)}])"
@@ -411,7 +400,7 @@ class TrackFusion(Node):
     def sensor_track_id(self, track: SensorTrack):
         return f"S{track.sensor_id}_ID{track.identity}"
 
-    def publish_markers(self):
+    def publish_markers(self, stamp, frame_id: str):
         marker_array = MarkerArray()
         for f in self.associated_tracks:
             if len(f.sensor_track_refs) == 0:
@@ -420,7 +409,7 @@ class TrackFusion(Node):
             center = self.get_position(f.kalman_filter.kf)
             vel = self.get_velocity(f.kalman_filter.kf)
             marker_array.markers.extend(self.get_track_marker(
-                f.identity, center, vel, f.confidence, frame_id='world'))
+                f.identity, center, vel, f.confidence, stamp, frame_id))
         self.markers_publisher.publish(marker_array)
 
     def publish_output(self, stamp, frame_id):

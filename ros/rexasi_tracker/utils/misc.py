@@ -22,6 +22,8 @@ def load_yaml(filepath: str, schema_filepath = '') -> tuple[bool, str, Any]:
     try:
         with open(filepath, "r") as file:
             doc = yaml.safe_load(file)
+            if doc == None:
+                doc = {} # allow empty file
             if schema_filepath != '':
                 return validate_yaml(doc, schema_filepath)
     except Exception as e:
