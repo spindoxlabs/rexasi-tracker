@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  IMAGE_TAG: 'rexasi-tracker'
+  IMAGE_TAG: 'rexasi-tracker/tracker'
   DOCKER_COMPOSE_CMD: 'docker compose'
   DOCKER_FLAGS: '--network rexasi-tracker --rm -it'
 
@@ -11,6 +11,8 @@ includes:
   setup: ./tasks/setup.yml
   detectors: ./tasks/detectors.yml
 
+env:
+  DOCKER_BUILDKIT: 1 
 
 tasks:
 

@@ -14,7 +14,6 @@ if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 from lidar_detector.config.config import lidar_parameters
 
-
 def generate_launch_description():
    
     lidar_detector= launch_ros.actions.Node(

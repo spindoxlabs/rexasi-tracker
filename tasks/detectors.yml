@@ -4,11 +4,20 @@ tasks:
 
   build-lidar:
     cmds:
-      - cmd: docker build -f detectors/lidar/Dockerfile.arm64 -t detectors/lidar detectors/lidar
-        platforms: [arm64]
-      - cmd: docker build -f detectors/lidar/Dockerfile.amd64 -t detectors/lidar detectors/lidar
-        platforms: [amd64]
+      - cmd: docker build -f detectors/lidar/Dockerfile -t detectors/lidar .
+
+  build-rgbd:
+    cmds:
+      - cmd: docker build -f detectors/rgbd/Dockerfile -t detectors/rgbd .
 
   build:
     cmds:
       - task detectors:build-lidar
+      # - task detectors:build-rgbd
+
+  download-models:
+    cmds:
+      - wget https://minio.spindoxlabs.it/rexasipro-public/models/self_supervised_person_detection.zip -P /tmp
+      - cd /tmp && unzip -o self_supervised_person_detection.zip
+      - sudo cp -r /tmp/self_supervised_person_detection ./data/
+      - rm -rf /tmp/self_supervised_person_detection self_supervised_person_detection.zip

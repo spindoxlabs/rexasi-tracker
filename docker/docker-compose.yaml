@@ -8,10 +8,10 @@ networks:
 services:
   rexasi-tracker:
     container_name: rexasi-tracker
-    image: rexasi-tracker
+    image: rexasi-tracker/tracker
     build:
       context: .
-      dockerfile: ./Dockerfile.amd64
+      dockerfile: docker/Dockerfile.amd64
     command: ros2 launch rexasi_tracker launch.py
     environment:
       PYTHONUNBUFFERED: 1
@@ -21,6 +21,21 @@ services:
       - rexasi-tracker
     runtime: nvidia
     privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # alternatively, use `count: all` for all GPUs
+              capabilities: [gpu]
+  lidar-detector:
+    image: detectors/lidar
+    command: ros2 launch lidar_detector launch.py
+    networks:
+      - rexasi-tracker
+    volumes:
+      - ../data:/data
+    runtime: nvidia
     deploy:
       resources:
         reservations:

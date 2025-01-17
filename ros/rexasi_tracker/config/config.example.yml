@@ -2,9 +2,9 @@ general:
   debug: true
 
 topics:
-  tracker_input_topic: "input/detections"
-  tracker_output_topic: "tracker/output"
-  fusion_output_topic: "output/tracks"
+  tracker_input_topic: "/detections"
+  tracker_output_topic: "/tracker/output"
+  fusion_output_topic: "/tracks"
 
 fusion_parameters:
   tracks_distance_threshold: 1.0

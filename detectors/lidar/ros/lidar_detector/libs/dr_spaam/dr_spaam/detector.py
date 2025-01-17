@@ -50,9 +50,9 @@ class Detector(object):
             )
 
         if gpu:
-            ckpt = torch.load(ckpt_file)
+            ckpt = torch.load(ckpt_file, weights_only=True)
         else:
-            ckpt = torch.load(ckpt_file, map_location=torch.device('cpu'))
+            ckpt = torch.load(ckpt_file, map_location=torch.device('cpu'), weights_only=True)
             
         self._model.load_state_dict(ckpt["model_state"])
 

@@ -1,15 +1,13 @@
 
 lidar_parameters = {
-    "debug": True,
-    "frame_id": 'world',
-    "sensor_id": 1,
     "lidar_topic": "/scan",
-    "output_topic": "/detections",
-    "model_ckpt_file": "/data/self_supervised_person_detection/ckpt_jrdb_ann_drow3_e40.pth",
-    "model_model": "DROW3",
-    "model_gpu": True,
-    "model_stride": 1,
-    "model_panoramic_scan": False,
+    "model_params": {
+        "ckpt_file": "/data/self_supervised_person_detection/ckpt_jrdb_ann_drow3_e40.pth",
+        "model": "DROW3",
+        "gpu": True,
+        "stride": 1,
+        "panoramic_scan": False,
+    },
     "conf_tresh": 0.8,
     "laser_fov": 270,
     "placeholder_value": 29.99,
@@ -20,6 +18,5 @@ lidar_parameters = {
     "shear": False,
     "scale": False,
     "perim_length": 62,
-    "skip_n_frames": 0,
-    "is_rotated": False
+    "skip_n_frames": 0
 }
