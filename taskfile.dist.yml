@@ -9,6 +9,7 @@ vars:
 
 includes:
   setup: ./tasks/setup.yml
+  detectors: ./tasks/detectors.yml
 
 
 tasks:
@@ -18,6 +19,7 @@ tasks:
       - task setup:clean
       - task setup:init-network
       - task setup:build-image
+      - task detectors:build
 
   start:
     cmds:
