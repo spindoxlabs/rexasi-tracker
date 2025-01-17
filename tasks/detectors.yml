@@ -1,0 +1,14 @@
+version: '3'
+
+tasks:
+
+  build-lidar:
+    cmds:
+      - cmd: docker build -f detectors/lidar/Dockerfile.arm64 -t detectors/lidar detectors/lidar
+        platforms: [arm64]
+      - cmd: docker build -f detectors/lidar/Dockerfile.amd64 -t detectors/lidar detectors/lidar
+        platforms: [amd64]
+
+  build:
+    cmds:
+      - task detectors:build-lidar
