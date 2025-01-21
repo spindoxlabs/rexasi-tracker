@@ -28,18 +28,3 @@ services:
             - driver: nvidia
               count: 1 # alternatively, use `count: all` for all GPUs
               capabilities: [gpu]
-  lidar-detector:
-    image: detectors/lidar
-    command: ros2 launch lidar_detector launch.py
-    networks:
-      - rexasi-tracker
-    volumes:
-      - ../data:/data
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1 # alternatively, use `count: all` for all GPUs
-              capabilities: [gpu]

@@ -13,7 +13,7 @@ tasks:
   build:
     cmds:
       - task detectors:build-lidar
-      # - task detectors:build-rgbd
+      - task detectors:build-rgbd
 
   download-models:
     cmds:
@@ -21,3 +21,7 @@ tasks:
       - cd /tmp && unzip -o self_supervised_person_detection.zip
       - sudo cp -r /tmp/self_supervised_person_detection ./data/
       - rm -rf /tmp/self_supervised_person_detection self_supervised_person_detection.zip
+
+  start:
+    cmds:
+      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.detectors.yaml up'

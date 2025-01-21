@@ -31,6 +31,9 @@ class RGBD(Node):
     def __init__(self):
         super().__init__("RGBD", automatically_declare_parameters_from_overrides=True)
 
+        # load parameters
+        self.debug = self.get_parameter("debug").get_parameter_value().bool_value
+
         # Define number of cameras
         self.n_cameras = (
             self.get_parameter("n_cameras").get_parameter_value().integer_value

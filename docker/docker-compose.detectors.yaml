@@ -1,0 +1,38 @@
+version: "3"
+
+networks:
+  rexasi-tracker:
+    name: "rexasi-tracker"
+    external: true
+
+services:
+  lidar-detector:
+    image: detectors/lidar
+    command: ros2 launch lidar_detector launch.py
+    networks:
+      - rexasi-tracker
+    volumes:
+      - ../data:/data
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # alternatively, use `count: all` for all GPUs
+              capabilities: [gpu]
+  rgbd-detector:
+    image: detectors/rgbd
+    command: ros2 launch rgbd_detector launch.py
+    networks:
+      - rexasi-tracker
+    volumes:
+      - ../data:/data
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # alternatively, use `count: all` for all GPUs
+              capabilities: [gpu]
