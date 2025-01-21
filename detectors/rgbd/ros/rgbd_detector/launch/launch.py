@@ -1,25 +1,43 @@
-import sys
-import os
-
-import launch_ros.actions
-
+from launch_ros.actions import Node
 from launch import LaunchDescription
 
-if os.getcwd() not in sys.path:
-    sys.path.append(os.getcwd())
-from rgbd_detector.config.config import rgbd_parameters
+pose_parameters = {
+    "debug": "true",
+    "rgbd_color_topic": "/color/image_raw",
+    "output_topic": "/keypoints",
+    "yolo_model": "yolov8n-pose"
+}
+
+rgbd_parameters = {
+    "debug": True,
+    "sensor_id": 2,
+    "frame_id": "world",
+    "optical_frame_id": "color_optical_frame",
+    "is_rotated": False,
+    "rgbd_color_camera_info_topic": "/color/camera_info",
+    "rgbd_depth_topic": "/depth/image_raw",
+    "rgbd_depth_camera_info_topic": "/depth/camera_info",
+    "output_topic": "/detections",
+    "keypoints_topic": pose_parameters["output_topic"],
+    "min_pose_confidence_score": 0.7,
+    "skip_depth_range": 2000,
+    "fps": 30
+}
+
 
 def generate_launch_description():
-   
-    pose_estimation = launch_ros.actions.Node(
-        executable=sys.executable,
-        arguments=["/ros_ws/rgbd_detector/rgbd_detector/pose_estimation.py"],
-        parameters=[{**rgbd_parameters}],
+
+    pose_estimation= Node(
+        package='rgbd_detector',
+        executable='pose_estimation',
+        name='pose_estimation',
+        parameters=[{**pose_parameters}],
     )
 
-    rgbd_detector = launch_ros.actions.Node(
-        executable=sys.executable,
-        arguments=["/ros_ws/rgbd_detector/rgbd_detector/rgbd_detector.py"],
+    rgbd_detector= Node(
+        package='rgbd_detector',
+        executable='rgbd_detector',
+        name='rgbd_detector',
         parameters=[{**rgbd_parameters}],
     )
 

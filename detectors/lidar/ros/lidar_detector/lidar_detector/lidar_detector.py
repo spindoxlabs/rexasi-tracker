@@ -118,16 +118,6 @@ class DetectorNode(Node):
 
         # convert to lidar_data
         centers = self.update_coordinates(points)
-        # lidar_data = SensorData(
-        #     **{
-        #         "frame_number": self.frame_number,
-        #         "idx": self.lidar_parameters["id"],
-        #         "sensor_type": self.lidar_parameters["label"],
-        #         "timestamp": get_timestamp(msg=msg),
-        #         "centers": {"coordinates": coordinates},
-        #         "confidence": confidences
-        #     }
-        # )
 
         self.publish_detections(centers, confidences, msg.header.stamp)
 
@@ -156,7 +146,3 @@ def main(args=None):
     # when the garbage collector destroys the node object)
     detector_node.destroy_node()
     rclpy.shutdown()
-
-
-if __name__ == "__main__":
-    main()

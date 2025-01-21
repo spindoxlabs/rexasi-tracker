@@ -28,3 +28,5 @@ RUN apt update && apt install -y \
 
 RUN mkdir -p /ros_ws/src
 WORKDIR /ros_ws
+
+COPY ros_entrypoint.sh /

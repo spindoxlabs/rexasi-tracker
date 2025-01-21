@@ -7,7 +7,7 @@ networks:
 
 services:
   lidar-detector:
-    image: detectors/lidar
+    image: rexasi-tracker/lidar-detector
     command: ros2 launch lidar_detector launch.py
     networks:
       - rexasi-tracker
@@ -19,10 +19,10 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1 # alternatively, use `count: all` for all GPUs
+              count: 1
               capabilities: [gpu]
   rgbd-detector:
-    image: detectors/rgbd
+    image: rexasi-tracker/rgbd-detector
     command: ros2 launch rgbd_detector launch.py
     networks:
       - rexasi-tracker
@@ -34,5 +34,5 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 1 # alternatively, use `count: all` for all GPUs
+              count: 1
               capabilities: [gpu]

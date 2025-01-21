@@ -2,8 +2,8 @@ FROM rexasi-tracker/ros2
 
 RUN pip3 install "numpy<1.24" filterpy pydantic cerberus norfair
 
-COPY ros/rexasi_tracker rexasi_tracker
-COPY ros/rexasi_tracker_msgs rexasi_tracker_msgs
+COPY ros/rexasi_tracker src/rexasi_tracker
+COPY ros/rexasi_tracker_msgs src/rexasi_tracker_msgs
 RUN source /opt/ros/humble/setup.bash && colcon build --packages-select rexasi_tracker rexasi_tracker_msgs
 
 COPY ros_entrypoint.sh /

@@ -22,7 +22,8 @@ class PoseEstimation(Node):
         self.color_topic = self.get_parameter("rgbd_color_topic").get_parameter_value().string_value
         self.output_topic = self.get_parameter("output_topic").get_parameter_value().string_value
 
-        torch.cuda.set_device("gpu" if torch.cuda.available() else "cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.cuda.device(device)
 
         self.isARM = platform.machine() == 'aarch64'
 
@@ -33,7 +34,7 @@ class PoseEstimation(Node):
             f"Subscribed to {self.color_topic}"
         )
         self.subscriber = self.create_subscription(
-            Image, self.color_topic, self.handle_frame_event(), 10
+            Image, self.color_topic, self.handle_frame_event, 10
         )
 
         self.get_logger().info(
@@ -115,7 +116,7 @@ class PoseEstimation(Node):
             self.get_logger().info(
                 "Downloading..."
             )
-            urllib.request.urlretrieve("{YOLO_MODELS_BASE_URL}{model_name}.pt", path)
+            urllib.request.urlretrieve(f"{YOLO_MODELS_BASE_URL}{model_name}.pt", path)
         if self.isARM:
             self.get_logger().info(
                     "Converting..."
@@ -127,6 +128,7 @@ class PoseEstimation(Node):
         msg = Pose()
         msg.position.x = keypoint[0]
         msg.position.y = keypoint[1]
+        msg.position.z = keypoint[2] # confidence
         return msg
 
     def publish_results(self, poses, msg_stamp):
@@ -146,7 +148,3 @@ def main(args=None):
     # when the garbage collector destroys the node object)
     pose_estimation.destroy_node()
     rclpy.shutdown()
-
-
-if __name__ == "__main__":
-    main()

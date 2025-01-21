@@ -1,31 +1,23 @@
-import logging
-import os
-import sys
 
-import launch_ros.actions
 from launch import LaunchDescription
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
 
-    tracker = launch_ros.actions.Node(
-        executable=sys.executable,
-        arguments=["rexasi_tracker/rexasi_tracker/tracker.py"],
-        parameters=[],
+    tracker = Node(
+            package='rexasi_tracker',
+            executable='tracker',
+            name='tracker',
+            parameters=[],
     )
 
-    track_fusion = launch_ros.actions.Node(
-        executable=sys.executable,
-        arguments=["rexasi_tracker/rexasi_tracker/track_fusion.py"],
-        parameters=[],
+    track_fusion = Node(
+            package='rexasi_tracker',
+            executable='track_fusion',
+            name='track_fusion',
+            parameters=[],
     )
-
-    try:
-        # TestNode(logger=logger).run_tests()
-        logging.info(f"Tests passed. Launching nodes")
-    except Exception as e:
-        logging.getLogger("launch").error(f"Test failed. {e}")
-        sys.exit()
 
     return LaunchDescription(
         [

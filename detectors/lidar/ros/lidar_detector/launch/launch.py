@@ -1,25 +1,39 @@
-import logging
-import os
-import sys
 
-import launch_ros.actions
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution
-from launch_ros.substitutions import FindPackageShare
-from launch.actions import IncludeLaunchDescription
 from launch import LaunchDescription
-from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
+from launch_ros.actions import Node
 
-if os.getcwd() not in sys.path:
-    sys.path.append(os.getcwd())
-from lidar_detector.config.config import lidar_parameters
+lidar_parameters = {
+    "debug": True,
+    "frame_id": 'world',
+    "sensor_id": 1,
+    "lidar_topic": "/scan",
+    "output_topic": "/detections",
+    "model_ckpt_file": "/data/self_supervised_person_detection/ckpt_jrdb_ann_drow3_e40.pth",
+    "model_model": "DROW3",
+    "model_gpu": True,
+    "model_stride": 1,
+    "model_panoramic_scan": False,
+    "conf_tresh": 0.8,
+    "laser_fov": 270,
+    "placeholder_value": 29.99,
+    "scan_rate": 14,
+    "angle_increment": 0.00581718236207962,
+    "ranges": 811,
+    "calibration_file": "/ros_ws/people_tracker/config/lidar_calibration/calibration_lidar.yml",
+    "shear": False,
+    "scale": False,
+    "perim_length": 62,
+    "skip_n_frames": 0,
+    "is_rotated": False
+}
 
 def generate_launch_description():
    
-    lidar_detector= launch_ros.actions.Node(
-        executable=sys.executable,
-        arguments=["/ros_ws/lidar_detector/lidar_detector/lidar_detector.py"],
-        parameters=[{**lidar_parameters}],
+    lidar_detector= Node(
+            package='lidar_detector',
+            executable='lidar_detector',
+            name='lidar_detector',
+            parameters=[{**lidar_parameters}],
     )
 
     return LaunchDescription(

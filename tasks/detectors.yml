@@ -4,11 +4,11 @@ tasks:
 
   build-lidar:
     cmds:
-      - cmd: docker build -f detectors/lidar/Dockerfile -t detectors/lidar .
+      - cmd: docker build -f detectors/lidar/Dockerfile -t rexasi-tracker/lidar-detector .
 
   build-rgbd:
     cmds:
-      - cmd: docker build -f detectors/rgbd/Dockerfile -t detectors/rgbd .
+      - cmd: docker build -f detectors/rgbd/Dockerfile -t rexasi-tracker/rgbd-detector .
 
   build:
     cmds:
