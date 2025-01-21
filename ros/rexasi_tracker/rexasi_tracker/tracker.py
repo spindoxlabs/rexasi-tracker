@@ -8,9 +8,8 @@ from norfair.filter import OptimizedKalmanFilterFactory
 from rclpy.node import Node
 from geometry_msgs.msg import Pose
 
-sys.path.append(os.getcwd())
-from rexasi_tracker.utils.misc import load_yaml
-from rexasi_tracker.config.parameters.defaults import MAX_SENSORS_NR, default_tracker_parameters, CONFIG_FILE, CONFIG_SCHEMA_FILE
+from utils.misc import load_yaml
+from config.parameters.defaults import MAX_SENSORS_NR, default_tracker_parameters, CONFIG_FILE, CONFIG_SCHEMA_FILE
 from rexasi_tracker_msgs.msg import Detections, Tracks
 
 
@@ -135,6 +134,3 @@ def main(args=None):
     tracker.destroy_node()
     rclpy.shutdown()
 
-
-if __name__ == "__main__":
-    main()

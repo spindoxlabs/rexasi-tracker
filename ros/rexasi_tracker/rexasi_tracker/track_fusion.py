@@ -12,11 +12,9 @@ from filterpy.kalman import KalmanFilter
 from transforms3d._gohlketransforms import quaternion_from_euler
 from geometry_msgs.msg import Pose, Twist
 
-if os.getcwd() not in sys.path:
-    sys.path.append(os.getcwd())
-from rexasi_tracker.utils.dto import AssociationTrack, SensorTrack
-from rexasi_tracker.utils.misc import get_timestamp, save_evaluation_data, load_yaml
-from rexasi_tracker.config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,CONFIG_FILE, CONFIG_SCHEMA_FILE
+from utils.dto import AssociationTrack, SensorTrack
+from utils.misc import get_timestamp, save_evaluation_data, load_yaml
+from config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,CONFIG_FILE, CONFIG_SCHEMA_FILE
 from rexasi_tracker_msgs.msg import Tracks
 
 DEBUG_MARKERS_TOPIC = "/debug/association"
@@ -663,6 +661,3 @@ def main(args=None):
     track_association.destroy_node()
     rclpy.shutdown()
 
-
-if __name__ == "__main__":
-    main()

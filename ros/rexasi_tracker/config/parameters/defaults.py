@@ -1,6 +1,6 @@
 
-CONFIG_FILE="rexasi_tracker/config/config.yml"
-CONFIG_SCHEMA_FILE="rexasi_tracker/config/parameters/config_schema.py"
+CONFIG_FILE="/ros_ws/src/rexasi_tracker/config/config.yml"
+CONFIG_SCHEMA_FILE="/ros_ws/src/rexasi_tracker/config/parameters/config_schema.py"
 
 MAX_SENSORS_NR=100
 
