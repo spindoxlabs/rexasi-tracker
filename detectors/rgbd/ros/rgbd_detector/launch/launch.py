@@ -12,7 +12,7 @@ rgbd_parameters = {
     "debug": True,
     "sensor_id": 2,
     "frame_id": "world",
-    "optical_frame_id": "color_optical_frame",
+    "optical_frame_id": "world",
     "is_rotated": False,
     "rgbd_color_camera_info_topic": "/camera_1/color/camera_info",
     "rgbd_depth_topic": "/camera_1/depth/image_rect_raw",

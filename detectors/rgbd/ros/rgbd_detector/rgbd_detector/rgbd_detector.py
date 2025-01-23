@@ -8,7 +8,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
 from message_filters import ApproximateTimeSynchronizer, Subscriber
-from geometry_msgs.msg import PoseArray
+from geometry_msgs.msg import Pose
 
 from rgbd_detector_msgs.msg import Persons
 from rexasi_tracker_msgs.msg import Detections
@@ -182,6 +182,12 @@ class RGBD(Node):
             centers.append((x, y))
 
         return centers
+
+    def center_to_pose_msg(self, center: tuple):
+            pose = Pose()
+            pose.position.x = float(center[0])
+            pose.position.y = float(center[1])
+            return pose
 
     def array_to_poses(self, list: List):
         poses = []
