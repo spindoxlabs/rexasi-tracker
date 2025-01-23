@@ -19,8 +19,18 @@ tasks:
     cmds:
       - docker build -f docker/Dockerfile.base . -t {{.BASE_IMAGE_TAG}}
 
-  build-image:
+  build-example:
+    cmds:
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./example/docker-compose.yaml build'
+
+  build-tracker:
+    cmds:
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.yaml build'
+
+  build:
     cmds:
       - task setup:build-base-image 
-      - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.yaml build'
+      - task setup:build-tracker
+      - task setup:build-example
+      - task detectors:build
 
