@@ -75,7 +75,7 @@ class Norfair(Node):
         )
         # INIT A SENSOR TRACKER IF NOT SEEN YET
         if tracker_data.sensor_id not in self.sensors:
-            if len(self.sensors.entries()) > MAX_SENSORS_NR:
+            if len(self.sensors.keys()) > MAX_SENSORS_NR:
                 self.get_logger().error("Reached sensor number limit (%d)" % MAX_SENSORS_NR)
                 return
             self.get_logger().info("Adding sensor with index: %d" % tracker_data.sensor_id)
@@ -119,7 +119,7 @@ class Norfair(Node):
             center.position.y = point[1]
             tracks.centers.append(center)
             tracks.confidences.append(tracked_object.last_detection.data)
-        tracks.dead_identities = list(dead_tracks_id)
+        tracks.dead_identities = [int(d) for d in dead_tracks_id]
 
         self.publisher.publish(tracks)
 

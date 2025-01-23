@@ -10,6 +10,8 @@ from sensor_msgs.msg import Image
 from ultralytics import YOLO
 from geometry_msgs.msg import PoseArray, Pose
 
+from rgbd_detector_msgs.msg import Persons
+
 YOLO_MODELS_BASE_URL= "https://github.com/ultralytics/assets/releases/download/v0.0.0/"
 
 class PoseEstimation(Node):
@@ -41,7 +43,7 @@ class PoseEstimation(Node):
                 f"Publishing to {self.output_topic}"
             )
         self.publisher = self.create_publisher(
-                PoseArray, self.output_topic, 10
+                Persons, self.output_topic, 10
             )
 
     def handle_frame_event(self, msg):
@@ -126,17 +128,20 @@ class PoseEstimation(Node):
 
     def keypoint_to_pose_msg(self, keypoint):
         msg = Pose()
-        msg.position.x = keypoint[0]
-        msg.position.y = keypoint[1]
-        msg.position.z = keypoint[2] # confidence
+        msg.position.x = float(keypoint[0])
+        msg.position.y = float(keypoint[1])
+        msg.position.z = float(keypoint[2]) # confidence
         return msg
 
-    def publish_results(self, poses, msg_stamp):
-        msg = PoseArray()
-        msg.header.stamp = msg_stamp
-        for p in poses:
-            msg.poses.append(self.keypoint_to_pose_msg(p))
-        self.publisher.publish(msg)
+    def publish_results(self, persons, msg_stamp):
+        persons_msg = Persons()
+        persons_msg.header.stamp = msg_stamp
+        for p in persons:
+            keypoint_msg = PoseArray()
+            for keypoint in p:
+                keypoint_msg.poses.append(self.keypoint_to_pose_msg(keypoint))
+            persons_msg.persons.append(keypoint_msg)
+        self.publisher.publish(persons_msg)
 
 
 def main(args=None):

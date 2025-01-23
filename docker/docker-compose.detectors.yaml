@@ -6,23 +6,31 @@ networks:
     external: true
 
 services:
-  lidar-detector:
-    image: rexasi-tracker/lidar-detector
-    command: ros2 launch lidar_detector launch.py
-    networks:
-      - rexasi-tracker
-    volumes:
-      - ../data:/data
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+  # lidar-detector:
+  #   container_name: lidar-detector
+  #   image: rexasi-tracker/lidar-detector
+  #   build:
+  #     context: ..
+  #     dockerfile: detectors/lidar/Dockerfile
+  #   command: ros2 launch lidar_detector launch.py
+  #   networks:
+  #     - rexasi-tracker
+  #   volumes:
+  #     - ../data:/data
+  #   runtime: nvidia
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
   rgbd-detector:
+    container_name: rgbd-detector
     image: rexasi-tracker/rgbd-detector
+    build:
+      context: ..
+      dockerfile: detectors/rgbd/Dockerfile
     command: ros2 launch rgbd_detector launch.py
     networks:
       - rexasi-tracker

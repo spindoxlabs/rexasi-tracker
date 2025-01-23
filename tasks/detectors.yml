@@ -2,18 +2,9 @@ version: '3'
 
 tasks:
 
-  build-lidar:
-    cmds:
-      - cmd: docker build -f detectors/lidar/Dockerfile -t rexasi-tracker/lidar-detector .
-
-  build-rgbd:
-    cmds:
-      - cmd: docker build -f detectors/rgbd/Dockerfile -t rexasi-tracker/rgbd-detector .
-
   build:
     cmds:
-      - task detectors:build-lidar
-      - task detectors:build-rgbd
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.detectors.yaml build'
 
   download-models:
     cmds:
@@ -24,4 +15,8 @@ tasks:
 
   start:
     cmds:
-      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.detectors.yaml up'
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.detectors.yaml up'
+
+  stop:
+    cmds:
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.detectors.yaml down'

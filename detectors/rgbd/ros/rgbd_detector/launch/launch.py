@@ -3,7 +3,7 @@ from launch import LaunchDescription
 
 pose_parameters = {
     "debug": "true",
-    "rgbd_color_topic": "/color/image_raw",
+    "rgbd_color_topic": "/camera_1/color/image_raw",
     "output_topic": "/keypoints",
     "yolo_model": "yolov8n-pose"
 }
@@ -14,9 +14,9 @@ rgbd_parameters = {
     "frame_id": "world",
     "optical_frame_id": "color_optical_frame",
     "is_rotated": False,
-    "rgbd_color_camera_info_topic": "/color/camera_info",
-    "rgbd_depth_topic": "/depth/image_raw",
-    "rgbd_depth_camera_info_topic": "/depth/camera_info",
+    "rgbd_color_camera_info_topic": "/camera_1/color/camera_info",
+    "rgbd_depth_topic": "/camera_1/depth/image_rect_raw",
+    "rgbd_depth_camera_info_topic": "/camera_1/depth/camera_info",
     "output_topic": "/detections",
     "keypoints_topic": pose_parameters["output_topic"],
     "min_pose_confidence_score": 0.7,

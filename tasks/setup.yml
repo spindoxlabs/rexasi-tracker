@@ -17,12 +17,10 @@ tasks:
 
   build-base-image:
     cmds:
-      - cmd: docker build -f docker/Dockerfile.base . -t {{.BASE_IMAGE_TAG}}
+      - docker build -f docker/Dockerfile.base . -t {{.BASE_IMAGE_TAG}}
 
   build-image:
     cmds:
-      - cmd: task setup:build-base-image 
-      - cmd: docker build -f docker/Dockerfile.arm64 . -t {{.IMAGE_TAG}}
-        platforms: [arm64]
-      - cmd: docker build -f docker/Dockerfile.amd64 . -t {{.IMAGE_TAG}}
-        platforms: [amd64]
+      - task setup:build-base-image 
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.yaml build'
+

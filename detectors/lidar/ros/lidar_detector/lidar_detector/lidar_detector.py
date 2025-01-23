@@ -7,6 +7,7 @@ import rclpy
 from dr_spaam.detector import Detector
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Pose
 
 
 if os.getcwd() not in sys.path:
@@ -90,7 +91,8 @@ class DetectorNode(Node):
         if not self.is_rotated:
             cc[:, 0] = -cc[:, 0]
 
-        return self.transform(cc)
+        # return self.transform(cc)
+        return cc
 
     def _scan_callback(self, msg):
 
@@ -121,7 +123,13 @@ class DetectorNode(Node):
 
         self.publish_detections(centers, confidences, msg.header.stamp)
 
-    def arrayToPoses(self, list: List):
+    def center_to_pose_msg(self, center: tuple):
+            pose = Pose()
+            pose.position.x = float(center[0])
+            pose.position.y = float(center[1])
+            return pose
+
+    def array_to_poses(self, list: List):
         poses = []
         for c in list:
             poses.append(self.center_to_pose_msg(c))
@@ -132,8 +140,8 @@ class DetectorNode(Node):
         msg.header.frame_id = self.frame_id
         msg.header.stamp = stamp
         msg.sensor_id = self.sensor_id
-        msg.centers = self.arrayToPoses(centers)
-        msg.confidences = confidences
+        msg.centers = self.array_to_poses(centers)
+        msg.confidences = [float(c) for c in confidences]
         self.detections_publisher.publish(msg)
 
 

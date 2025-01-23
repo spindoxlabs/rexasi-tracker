@@ -1,0 +1,40 @@
+version: "3"
+
+networks:
+  rexasi-tracker:
+    name: "rexasi-tracker"
+    external: true
+
+include:
+  - ../docker/docker-compose.yaml
+  - ../docker/docker-compose.detectors.yaml
+
+services:
+  player:
+    depends_on:
+      - rexasi-tracker
+    container_name: player
+    image: rexasi-tracker/rosbag
+    build:
+      context: ..
+      dockerfile: example/Dockerfile
+    command: ros2 bag play /data/ex08_01
+    volumes:
+      - ./data:/data
+    networks:
+      - rexasi-tracker
+  rviz:
+    container_name: rviz
+    image: rexasi-tracker/base
+    command: ros2 run rviz2 rviz2
+    runtime: nvidia
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./config/rviz:/root/.rviz2/
+    environment:
+      - ROS_DOMAIN_ID=0
+      - DISPLAY
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    networks:
+      - rexasi-tracker

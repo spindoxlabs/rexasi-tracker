@@ -1,14 +1,6 @@
-mcap-ros2-support
-cvBridge3
-importRosbag
-ultralytics
-Pillow
-Cython
 git+https://github.com/tryolabs/norfair.git@master
 pydantic
 transforms3d
 numpy<1.24
-#googleapis-common-protos==1.52.0
-#protobuf==3.19
-#google
 cerberus
+pyrealsense2

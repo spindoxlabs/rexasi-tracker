@@ -5,7 +5,7 @@
         'default': {},
         'schema': {
           'debug': {
-            'default': False,
+            'default': True,
             'type': 'boolean'
           }
         }
@@ -16,15 +16,15 @@
       'schema': {
         'tracker_input_topic': {
             'type': 'string',
-            'default': 'input/detections'
+            'default': '/detections'
           },
         'tracker_output_topic': {
           'type': 'string',
-          'default': 'tracker/output'
+          'default': '/tracker/output'
         },
         'fusion_output_topic': {
           'type': 'string',
-          'default': 'output/tracks'
+          'default': '/tracks'
         }
       }
     },

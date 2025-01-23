@@ -43,6 +43,7 @@ class TrackFusion(Node):
         self.debug = self.config["general"]["debug"]
 
         if self.debug:
+            self.get_logger().info(f"Publishing markers to {DEBUG_MARKERS_TOPIC}")
             self.markers_publisher = self.create_publisher(
                 MarkerArray, DEBUG_MARKERS_TOPIC, 10
             )
@@ -94,7 +95,7 @@ class TrackFusion(Node):
         twist.linear.y = float(vel[1])
         return twist
 
-    def arrayToPoses(self, list: List):
+    def array_to_poses(self, list: List):
         poses = []
         for c in list:
             poses.append(self.center_to_pose_msg(c))
@@ -110,7 +111,7 @@ class TrackFusion(Node):
         topic_data_1.sensor_id = 1
         topic_data_1.identities = [1, 2]
         topic_data_1.dead_identities = []
-        topic_data_1.centers = self.arrayToPoses([(-1, 5), (1, 5)])
+        topic_data_1.centers = self.array_to_poses([(-1, 5), (1, 5)])
         topic_data_1.confidences = [0.8, 0.9]
 
         self.process_sensor_data(topic_data_1)
@@ -120,7 +121,7 @@ class TrackFusion(Node):
         topic_data_2.sensor_id = 2
         topic_data_2.identities = [3, 4, 5]
         topic_data_2.dead_identities = []
-        topic_data_2.centers = self.arrayToPoses([(-0.8, 5.1), (1.2, 4.9), (0, 3)])
+        topic_data_2.centers = self.array_to_poses([(-0.8, 5.1), (1.2, 4.9), (0, 3)])
         topic_data_2.confidences = [0.8, 0.6, 0.9]
 
         self.process_sensor_data(topic_data_2)
@@ -138,7 +139,7 @@ class TrackFusion(Node):
         topic_data_3.sensor_id = 1
         topic_data_3.identities = [1, 2]
         topic_data_3.dead_identities = []
-        topic_data_3.centers = self.arrayToPoses([(-0.8, 4.7), (1.1, 4.6)])
+        topic_data_3.centers = self.array_to_poses([(-0.8, 4.7), (1.1, 4.6)])
         topic_data_3.confidences = [0.8, 0.9]
 
         self.process_sensor_data(topic_data_3)
@@ -153,7 +154,7 @@ class TrackFusion(Node):
         topic_data_4.sensor_id = 2
         topic_data_4.identities = []
         topic_data_4.dead_identities = [3,4,5]
-        topic_data_4.centers = self.arrayToPoses([])
+        topic_data_4.centers = self.array_to_poses([])
         topic_data_4.confidences = []
 
         self.process_sensor_data(topic_data_4)
@@ -418,8 +419,8 @@ class TrackFusion(Node):
             tracks.identities.append(a.identity)
             center = self.get_position(a.kalman_filter.kf)
             vel = self.get_velocity(a.kalman_filter.kf)
-            tracks.pose = self.center_to_pose_msg(center)
-            tracks.velocity = self.vel_to_twist_msg(vel)
+            tracks.centers.append(self.center_to_pose_msg(center))
+            tracks.velocities.append(self.vel_to_twist_msg(vel))
             tracks.confidences.append(a.confidence)
         self.output_publisher.publish(tracks)
 

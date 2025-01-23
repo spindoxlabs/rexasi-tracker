@@ -27,9 +27,10 @@ tasks:
     cmds:
       - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.yaml up'
 
-  start/jetson:
+  start/example:
     cmds:
-      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.jetson.yaml up'
+      - xhost local:root
+      - '{{.DOCKER_COMPOSE_CMD}} -f example/docker-compose.yaml up'
 
   rviz:
     cmds:

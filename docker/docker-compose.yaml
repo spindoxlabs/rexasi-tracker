@@ -10,8 +10,8 @@ services:
     container_name: rexasi-tracker
     image: rexasi-tracker/tracker
     build:
-      context: .
-      dockerfile: docker/Dockerfile.amd64
+      context: ..
+      dockerfile: docker/Dockerfile
     command: ros2 launch rexasi_tracker launch.py
     environment:
       PYTHONUNBUFFERED: 1
