@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Introduction
 
-The Rexasi-Tracker is a multi-object and multisenor tracker developed within the EU HORIZON project [REXASI-PRO](https://rexasi-pro.spindoxlabs.com/). It's original purpose is to provide information about people's trajectories to a self-driving wheelchair, so that the wheelchair can reach its destination by calculating socially acceptable paths. Thanks to its modular implementation based on the ROS2 framework, the tracker can be easily adapted to different scenarios. Furthermore, by using the appropriate detectors, it can be used to track objects other than people.
+The Rexasi-Tracker is a multi-object and multisensor tracker developed within the EU HORIZON project [REXASI-PRO](https://rexasi-pro.spindoxlabs.com/). It's original purpose is to provide information about people's trajectories to a self-driving wheelchair, so that the wheelchair can reach its destination by calculating socially acceptable paths. Thanks to its modular implementation based on the ROS2 framework, the tracker can be easily adapted to different scenarios. Furthermore, by using the appropriate detectors, it can be used to track objects other than people.
 
 The architecture of the tracker is abstracted into five steps: people detection, people localisation, track generation, track fusion and visualisation.
 

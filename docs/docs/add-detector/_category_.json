@@ -3,6 +3,6 @@
   "position": 5,
   "link": {
     "type": "generated-index",
-    "description": "Add a detector"
+    "description": "Add a detector to input data into the Rexasi Tracker"
   }
 }
