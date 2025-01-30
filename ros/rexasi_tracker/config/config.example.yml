@@ -1,23 +1,35 @@
+# General parameters
 general:
+  # Enable/disable debugging functions, it produces more logs
   debug: true
 
+# This section defines the input/output topics of the rexasi-tracker
 topics:
+  # The topic on which the rexasi-tracker subscribes waiting for detections
   tracker_input_topic: "/detections"
-  tracker_output_topic: "/tracker/output"
+  # The topic on which the rexasi-tracker publishes the output tracks
   fusion_output_topic: "/tracks"
 
+# This section includes the parameter used by the track fusion algorithm
 fusion_parameters:
+  # Tracks with distance less than tracks_distance_threshold are fused together
   tracks_distance_threshold: 1.0
+  # Parameter used by the Hungarian algorithm to compute the association matrix
   hungarian_threshold: 0.5
 
+# This section defines the parameters related to each sensor.
+# If the sensor_id of a detection is present in this list, these parameters override the default ones
 sensors:
+  # The ID of the sensor (defined and published by each detector), must be unique
   - sensor_id: 1
+    # Tracker parameters (ref. https://tryolabs.github.io/norfair/2.0/reference/tracker/)
     tracker_paramterers:
       distance_function: 'euclidean'
       distance_threshold: 0.8
       initialization_delay: 4
       hit_counter_max: 7
       pointwise_hit_counter_max: 7
+    # Kalman filter parameters used in the track fusion algorithm (ref. https://filterpy.readthedocs.org)
     specs:
       R_std:
         x: 0.001

@@ -20,8 +20,8 @@ tasks:
     cmds:
       - task setup:clean
       - task setup:init-network
-      - task setup:build-image
-      - task detectors:build
+      - task setup:build
+      - task detectors:download-models
 
   start:
     cmds:
