@@ -7,9 +7,16 @@ networks:
 
 include:
   - ../docker/docker-compose.yaml
-  - ../docker/docker-compose.detectors.yaml
 
 services:
+  rgbd-detector:
+    extends:
+      file: ../docker/docker-compose.detectors.yaml
+      service: rgbd-detector
+  # lidar-detector:
+  #   extends:
+  #     file: ../docker/docker-compose.detectors.yaml
+  #     service: lidar-detector
   player:
     depends_on:
       - rexasi-tracker

@@ -377,7 +377,7 @@ class TrackFusion(Node):
         text_marker.header.stamp = stamp
         text_marker.type = 9
         text_marker.id = identity * 10000
-        text_marker.text = f"(id:{identity})(conf:{round(confidence,1)})(vel_angle:{round(angle_deg)},vel:[{round(velocity[0],1)},{round(velocity[1],1)}])"
+        text_marker.text = f"ID:{identity}"
         text_marker.lifetime = marker_lifetime
         text_marker.scale.x = 1.0
         text_marker.scale.y = 1.0

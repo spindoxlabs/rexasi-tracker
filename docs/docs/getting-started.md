@@ -17,7 +17,7 @@ It is possibile to override it by creating a ```taskfile.yml```, for local envir
 
 To build all the docker images and download the necessary ML models, run:
 
-```bash
+```
 task setup
 ```
 
