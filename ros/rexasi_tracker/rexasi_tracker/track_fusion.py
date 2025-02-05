@@ -18,9 +18,6 @@ from config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalm
 from rexasi_tracker_msgs.msg import Tracks
 
 DEBUG_MARKERS_TOPIC = "/debug/association"
-DEBUG_CSV_FILE = "/data/sensor_fusion.csv"
-COLORS = [(0.0, 0.0, 1.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 1.0, 1.0)]
-
 
 class TrackFusion(Node):
     def __init__(self):
@@ -292,25 +289,6 @@ class TrackFusion(Node):
 
         self.get_logger().info("Tracks: %d" % (len(self.associated_tracks)))
 
-        # if self.debug:
-        #     centers = []
-        #     identities = []
-        #     for t in self.associated_tracks:
-        #         if tracks_data.sensor_id == t.current_sensor_id:
-        #             centers.append(
-        #                 (t.kalman_filter.kf.x.T[0][0], t.kalman_filter.kf.x.T[0][2]))
-        #             identities.append(t.identity)
-        #     if len(centers) > 0:
-        #         save_evaluation_data(
-        #             0,
-        #             centers,
-        #             identities,
-        #             self.frame_number,
-        #             topic_data.timestamp,
-        #             sensor_type="kalman_fusion",
-        #             name=f"{self.get_name()}",
-        #         )
-        #     self.frame_number += 1
 
     def angle_between_vectors_np(self, v1_u, v2_u):
         angle_rad = np.arctan2(np.cross(v1_u, v2_u), np.dot(v1_u, v2_u))
@@ -445,23 +423,10 @@ class TrackFusion(Node):
         fused_track.sensor_track_refs.append(sensor_track)
         sensor_track.fused_track_ref = fused_track.identity
 
-    def to_exclude(self, center: Pose, sensor_id: int):
-        # orientation: 0 = X forward, 1 = Y forward
-        distance = center.position.x if self.x_forward else center.position.y
-        if sensor_id in sensor_exclusion:
-            if sensor_exclusion[sensor_id]["condition"] == "gt" and distance > sensor_exclusion[sensor_id]["value"]:
-                return True
-            if sensor_exclusion[sensor_id]["condition"] == "lt" and distance < sensor_exclusion[sensor_id]["value"]:
-                return True
-        return False
-
     def add_sensor_tracks(self, tracks_data: Tracks):
         self.get_logger().debug("Add identities %s (dead: %s) from sensor %d" % (
             str(tracks_data.identities), str(tracks_data.dead_identities), tracks_data.sensor_id))
         for sIndex, id in enumerate(tracks_data.identities + tracks_data.dead_identities):
-            if id in tracks_data.identities and self.to_exclude(tracks_data.centers[sIndex], tracks_data.sensor_id):
-                self.get_logger().info("Excluding Id %d of sensor %d" % (id, tracks_data.sensor_id))
-                continue
             found = False
             for tIndex, s in enumerate(self.sensor_tracks):
                 if s.sensor_id == tracks_data.sensor_id and s.identity == id:  # update existing sensor track
@@ -628,28 +593,6 @@ class TrackFusion(Node):
     def remove_fused_with_no_references(self):
         self.associated_tracks = [
             f for f in self.associated_tracks if len(f.sensor_track_refs) > 0]
-
-    # def publish(self, topic_data: SensorTrackedData):
-        # """
-        # This data is used to publish the results to the subscriber
-        # """
-        # fused_coordinates = []
-        # fused_identities = []
-        # for s in self.sensor_tracks:
-        #     if s.sensor_id == topic_data.idx and s.fused_track_ref != 0:
-        #         fused_identities.append(s.fused_track_ref)
-        #         for f in self.associated_tracks:
-        #             if f.identity == s.fused_track_ref:
-        #                 fused_coordinates.append(f.center)
-        #                 break
-        # topic_data.fused_identities = fused_identities
-        # msg = String()
-        # msg.data = json.dumps(topic_data.model_dump())
-        # self.publisher.publish(msg)
-        # for f in self.associated_tracks:
-        #     msg = String()
-        #     msg.data = json.dumps(f.model_dump())
-        #     self.fused_tracks_publisher.publish(msg)
 
 
 def main(args=None):
