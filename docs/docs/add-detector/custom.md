@@ -16,3 +16,4 @@ int32 sensor_id
 geometry_msgs/Pose[] centers
 float32[] confidences
 ```
+The `sensor_id` parameter must be unique (each detector must publish with a different Id). The centers are a list of [Pose](https://docs.ros.org/en/noetic/api/geometry_msgs/html/msg/Pose.html) messages, where only the Position parameter is taken into account. The `confidences` are values in the range `[0.0-1.0]`, an element in the  `confidences` list refers to an element in `centers`, at the same index.
