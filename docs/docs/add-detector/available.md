@@ -9,7 +9,7 @@ With the Rexasi Tracker come the following, ready to use, people detectors.
 
 ## LiDAR detector
 The LiDAR detector uses the [DR-SPAAM](https://arxiv.org/abs/2004.14079) model to detect people from 2D LiDAR data.
-The implementation is based on [2D_lidar_person_detection](https://github.com/VisualComputingInstitute/2D_lidar_person_detection). \
+The implementation is based on the [2D_lidar_person_detection](https://github.com/VisualComputingInstitute/2D_lidar_person_detection) library. \
 Code and configuration under [LiDAR folder](https://github.com/spindoxlabs/rexasi-tracker/tree/main/detectors/lidar).
 
 
