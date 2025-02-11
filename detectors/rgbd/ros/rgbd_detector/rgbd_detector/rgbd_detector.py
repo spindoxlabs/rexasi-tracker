@@ -28,7 +28,7 @@ class RGBD(Node):
         self.keypoints_topic = self.get_parameter("keypoints_topic").get_parameter_value().string_value
         self.output_topic = self.get_parameter("output_topic").get_parameter_value().string_value
         self.rgbd_depth_topic = self.get_parameter("rgbd_depth_topic").get_parameter_value().string_value
-        self.rgbd_depth_camera_info_topic = self.get_parameter("rgbd_color_camera_info_topic").get_parameter_value().string_value
+        self.rgbd_depth_camera_info_topic = self.get_parameter("rgbd_depth_camera_info_topic").get_parameter_value().string_value
         self.min_pose_confidence_score = self.get_parameter("min_pose_confidence_score").get_parameter_value().double_value
         self.skip_depth_range = self.get_parameter("skip_depth_range").get_parameter_value().integer_value
         self.frame_id = self.get_parameter("frame_id").get_parameter_value().string_value
@@ -41,7 +41,10 @@ class RGBD(Node):
         self.pyrealsense_wrapper = PyRealSenseWrapper(self, self.frame_id, self.optical_frame_id)
 
         self.get_logger().info(
-            f"Subscribing to {self.rgbd_depth_camera_info_topic}"
+            f"Subscribing to {self.rgbd_depth_topic}"
+        )
+        self.get_logger().info(
+            f"Subscribing to {self.keypoints_topic}"
         )
         self.sync = ApproximateTimeSynchronizer([Subscriber(self, Image, self.rgbd_depth_topic),
                                           Subscriber(self, Persons, self.keypoints_topic)], 30, 1/self.fps)
@@ -62,6 +65,7 @@ class RGBD(Node):
             )
 
     def handle_camera_info(self, msg):
+            self.get_logger().info("Got camera info !!!")
             self.camera_intrinsics = init_camera_intrinsics(msg)
             self.destroy_subscription(self.camera_info_sub)
 
