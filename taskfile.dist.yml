@@ -8,7 +8,8 @@ vars:
   DATA_VOLUME: '/path/to/bag-files/folder'
 
 includes:
-  setup: ./tasks/setup.yml
+  tracker: ./tasks/tracker.yml
+  example: ./tasks/example.yml
   detectors: ./tasks/detectors.yml
 
 env:
@@ -16,21 +17,26 @@ env:
 
 tasks:
 
+  clean:
+    cmds:
+      - sudo rm -rf build install log resource
+      - mkdir -p data
+      - sudo chmod -R 777 ./data
+
   setup:
     cmds:
-      - task setup:clean
-      - task setup:init-network
-      - task setup:build
-      - task detectors:download-models
+      - docker network create rexasi-tracker | true
+      - task tracker:build
+      - task detectors:setup
+      - task example:setup
 
-  start:
+  start-tracker:
     cmds:
-      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.yaml up'
+      - task tracker:start
 
-  start/example:
+  start-example:
     cmds:
-      - xhost local:root
-      - '{{.DOCKER_COMPOSE_CMD}} -f example/docker-compose.yaml up'
+      - task example:start
 
   rviz:
     cmds:
@@ -40,15 +46,3 @@ tasks:
   bash:
     cmds:
       - docker run {{.DOCKER_FLAGS}} {{.IMAGE_TAG}} bash
-
-  replay:
-    vars:
-      BAG_FILE: 'bag-file-folder-name'
-    cmds:
-      - docker run {{.DOCKER_FLAGS}} -v {{.DATA_VOLUME}}:/data {{.IMAGE_TAG}} ros2 bag play -l -r 0.5 /data/{{.BAG_FILE}}
-
-  record:
-    vars:
-      BAG_FILE: 'output'
-    cmds:
-      - docker run {{.DOCKER_FLAGS}} -v {{.DATA_VOLUME}}:/data {{.IMAGE_TAG}} ros2 bag record -a -o /data/{{.BAG_FILE}}

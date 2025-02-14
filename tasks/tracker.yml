@@ -1,0 +1,15 @@
+version: '3'
+
+vars:
+  BASE_IMAGE_TAG: 'rexasi-tracker/base'
+
+tasks:
+
+  build:
+    cmds:
+      - docker build -f docker/Dockerfile.base . -t {{.BASE_IMAGE_TAG}}
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.yaml build'
+
+  start:
+    cmds:
+      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.yaml up'

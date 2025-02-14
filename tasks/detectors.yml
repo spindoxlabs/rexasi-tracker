@@ -8,7 +8,7 @@ tasks:
 
   download-models:
     cmds:
-      - wget https://minio.spindoxlabs.it/rexasipro-public/models/self_supervised_person_detection.zip -P /tmp
+      - wget https://minio.spindoxlabs.it/rexasipro-public/models/self_supervised_person_detection.zip -P /tmp/
       - cd /tmp && unzip -o self_supervised_person_detection.zip
       - sudo cp -r /tmp/self_supervised_person_detection ./data/
       - rm -rf /tmp/self_supervised_person_detection self_supervised_person_detection.zip
@@ -20,3 +20,8 @@ tasks:
   stop:
     cmds:
       - '{{.DOCKER_COMPOSE_CMD}} -f ./docker/docker-compose.detectors.yaml down'
+
+  setup:
+    cmds:
+      - task detectors:build
+      - task detectors:download-models

@@ -1,0 +1,24 @@
+version: '3'
+
+tasks:
+
+  build:
+    cmds:
+      - '{{.DOCKER_COMPOSE_CMD}} -f ./example/docker-compose.yaml build'
+
+  download-bag:
+    cmds:
+      - mkdir -p example/data
+      - wget https://minio.spindoxlabs.it/rexasipro-public/bags/example_bag.zip -P /tmp/
+      - cd /tmp && unzip -o example_bag.zip
+      - sudo cp -r /tmp/bag_compressed ./example/data/
+
+  setup:
+    cmds:
+      - task example:build
+      - task example:download-bag
+
+  start:
+    cmds:
+      - xhost local:root
+      - '{{.DOCKER_COMPOSE_CMD}} -f example/docker-compose.yaml up'
