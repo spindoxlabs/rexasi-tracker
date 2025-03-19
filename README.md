@@ -1,3 +1,3 @@
 # Rexasi-Tracker
 
-Please refer to the [documentation](https://github.com/spindoxlabs/rexasi-tracker/docs).
+Please refer to the [documentation](https://spindoxlabs.github.io/rexasi-tracker).
