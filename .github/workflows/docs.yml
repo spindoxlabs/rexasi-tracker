@@ -24,10 +24,12 @@ jobs:
           cache: yarn
 
       - name: Install dependencies in docs/
-        run: cd docs && yarn install --frozen-lockfile 
+        run: yarn install --frozen-lockfile
+        working-directory: docs
 
       - name: Build documentation
         run: cd docs && yarn build
+        working-directory: docs
 
       # Popular action to deploy to GitHub Pages:
       # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
