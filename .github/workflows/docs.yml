@@ -23,13 +23,13 @@ jobs:
           node-version: 18
           cache: yarn
 
-      - name: Install dependencies in docs/
+      - name: Install dependencies
         run: yarn install --frozen-lockfile
-        working-directory: docs
+        working-directory: ./docs
 
       - name: Build documentation
         run: cd docs && yarn build
-        working-directory: docs
+        working-directory: ./docs
 
       # Popular action to deploy to GitHub Pages:
       # Docs: https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-docusaurus
