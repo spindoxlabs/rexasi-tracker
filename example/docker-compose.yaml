@@ -27,7 +27,7 @@ services:
     build:
       context: ..
       dockerfile: example/Dockerfile
-    command: bash -c "sleep 10 && ros2 bag play /data/bag_recording"
+    command: bash -c "sleep 10 && ros2 bag play /data/bag_compressed"
     volumes:
       - ./data:/data
     networks:

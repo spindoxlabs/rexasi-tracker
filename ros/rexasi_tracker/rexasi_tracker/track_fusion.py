@@ -296,23 +296,25 @@ class TrackFusion(Node):
         return angle_rad, angle_deg
 
     def get_track_marker(self, identity, center, velocity, confidence, stamp, frame_id):
-        marker_lifetime = rclpy.duration.Duration(seconds=0.5).to_msg()
+        marker_lifetime = rclpy.duration.Duration(seconds=1.0).to_msg()
+        scale_factor = 3.0
         markers = []
         #add circle
         circle_marker = Marker()
         circle_marker.header.frame_id = frame_id
         circle_marker.header.stamp = stamp
         circle_marker.type = 2
+        circle_marker.ns = "tracks"
         circle_marker.id = identity
         circle_marker.lifetime = marker_lifetime
-        circle_marker.scale.x = 0.1
-        circle_marker.scale.y = 0.1
-        circle_marker.scale.z = 0.0
+        circle_marker.scale.x = scale_factor*0.05
+        circle_marker.scale.y = scale_factor*0.05
+        circle_marker.scale.z = 0.01
         circle_marker.pose.position.x = center[0]
         circle_marker.pose.position.y = center[1]
         circle_marker.pose.position.z = 0.05
         circle_marker.pose.orientation.w = 1.0
-        circle_marker.color.r = 0.0
+        circle_marker.color.r = 1.0
         circle_marker.color.g = 1.0
         circle_marker.color.b = 0.0
         circle_marker.color.a = 1.0
@@ -324,6 +326,7 @@ class TrackFusion(Node):
         arrow_marker.header.stamp = stamp
         arrow_marker.type = 0
         arrow_marker.id = identity*100
+        arrow_marker.ns = "tracks"
         arrow_marker.lifetime = marker_lifetime
 
         # comput velocity value and angle
@@ -334,11 +337,11 @@ class TrackFusion(Node):
         
         # Set the scale of the arrow_marker (normalize wrt max person velocity)
         max_vel = 1.5 # m/s
-        arrow_marker.scale.x = vel_abs/max_vel
-        arrow_marker.scale.y = 0.05
-        arrow_marker.scale.z = 0.0
+        arrow_marker.scale.x = scale_factor * vel_abs/max_vel
+        arrow_marker.scale.y = scale_factor * 0.01
+        arrow_marker.scale.z = 0.01
         arrow_marker.color.r = 1.0
-        arrow_marker.color.g = 0.0
+        arrow_marker.color.g = 1.0
         arrow_marker.color.b = 0.0
         arrow_marker.color.a = 1.0
         arrow_marker.pose.position.x = center[0]
@@ -355,17 +358,18 @@ class TrackFusion(Node):
         text_marker.header.stamp = stamp
         text_marker.type = 9
         text_marker.id = identity * 10000
+        text_marker.ns = "tracks"
         text_marker.text = f"ID:{identity}"
         text_marker.lifetime = marker_lifetime
         text_marker.scale.x = 1.0
         text_marker.scale.y = 1.0
-        text_marker.scale.z = 0.1
+        text_marker.scale.z = scale_factor * 0.1
         text_marker.color.r = 1.0
         text_marker.color.g = 1.0
-        text_marker.color.b = 0.0
+        text_marker.color.b = 1.0
         text_marker.color.a = 1.0
         text_marker.pose.position.x = center[0]
-        text_marker.pose.position.y = center[1]
+        text_marker.pose.position.y = center[1] + 0.3
         text_marker.pose.position.z = 0.2
         text_marker.pose.orientation.x = 0.0
         text_marker.pose.orientation.y = 0.0

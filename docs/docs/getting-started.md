@@ -24,7 +24,7 @@ task setup
 ## Run it
 To run the rexasi-tracker alone just type:
 ```
-task start
+task start-tracker
 ```
 
 See the [example](./example) to run the tracker along with a detector (RGBD people detector) and RVIZ to visualize the output tracks.
