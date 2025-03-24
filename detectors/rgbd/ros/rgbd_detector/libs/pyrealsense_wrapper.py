@@ -8,6 +8,8 @@ import tf2_geometry_msgs
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
+TF_DISCARD_TH_SEC=5.0 #sec
+
 
 def init_camera_intrinsics(camera_info):
     intrinsics = rs.intrinsics()
@@ -21,9 +23,6 @@ def init_camera_intrinsics(camera_info):
     intrinsics.model = rs.distortion.none
     intrinsics.coeffs = [i for i in camera_info.d]
     return intrinsics
-
-def get_timestamp_from_msgstamp(stamp) -> int:
-    return stamp.sec * pow(10, 9) + stamp.nanosec
 
 class PyRealSenseWrapper:
     def __init__(self, node, ref_frame_id, optical_frame_id):
@@ -42,11 +41,17 @@ class PyRealSenseWrapper:
             self.tf_buffer = Buffer()
             self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
+    def get_timestamp_from_msgstamp(self, stamp) -> int:
+        return stamp.sec + stamp.nanosec  * pow(10, -9)
+
     def look_up(self, to_frame_rel, from_frame_rel, stamp):
         try:
-            t = self.tf_buffer.lookup_transform(to_frame_rel, from_frame_rel, stamp)
-                            #rclpy.time.Time()) #,timeout=rclpy.duration.Duration(seconds=1.0))
-            # self.logger.debug("Transform from '%s' to '%s': %s" % (from_frame_rel, to_frame_rel, str(t)))
+            t = self.tf_buffer.lookup_transform(to_frame_rel, from_frame_rel, rclpy.time.Time())
+            diff = abs(self.get_timestamp_from_msgstamp(t.header.stamp) - self.get_timestamp_from_msgstamp(stamp))
+            if diff > TF_DISCARD_TH_SEC:
+                self.logger.info("Discarding transformation older than 1 sec: abs(%.2f - %.2f) > %.f" 
+                                       % (self.get_timestamp_from_msgstamp(t.header.stamp),self.get_timestamp_from_msgstamp(stamp), TF_DISCARD_TH_SEC))  
+                return None
             return t
         except TransformException as ex:
             self.logger.error(
@@ -55,7 +60,7 @@ class PyRealSenseWrapper:
 
     def get_transform(self, to_camera: bool, stamp = None):
         if stamp:
-            timestamp = get_timestamp_from_msgstamp(stamp)
+            timestamp = self.get_timestamp_from_msgstamp(stamp)
             if self.transforms["ts"] == timestamp:
                 # use cached transform
                 return self.transforms["ref_to_camera" if to_camera else "camera_to_ref"]

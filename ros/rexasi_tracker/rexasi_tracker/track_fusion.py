@@ -336,7 +336,7 @@ class TrackFusion(Node):
         vel_quat = quaternion_from_euler(0,0,angle_rad,'syzx')
         
         # Set the scale of the arrow_marker (normalize wrt max person velocity)
-        max_vel = 1.5 # m/s
+        max_vel = 5 # m/s
         arrow_marker.scale.x = scale_factor * vel_abs/max_vel
         arrow_marker.scale.y = scale_factor * 0.01
         arrow_marker.scale.z = 0.01

@@ -8,11 +8,17 @@ from dr_spaam.detector import Detector
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Pose
-
+from geometry_msgs.msg import PointStamped
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+import tf2_geometry_msgs
 
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 from rexasi_tracker_msgs.msg import Detections
+
+TF_DISCARD_TH_SEC=5.0 #sec
 
 class DetectorNode(Node):
     def __init__(self):
@@ -21,6 +27,7 @@ class DetectorNode(Node):
         # load parameters
         self.debug = self.get_parameter("debug").get_parameter_value().bool_value
         self.frame_id = self.get_parameter("frame_id").get_parameter_value().string_value
+        self.lidar_frame_id = self.get_parameter("lidar_frame_id").get_parameter_value().string_value
         self.sensor_id = self.get_parameter("sensor_id").get_parameter_value().integer_value
         self.lidar_topic = self.get_parameter("lidar_topic").get_parameter_value().string_value
         self.output_topic = self.get_parameter("output_topic").get_parameter_value().string_value
@@ -48,6 +55,9 @@ class DetectorNode(Node):
         self.get_logger().info("Using %s" % ("GPU" if self.gpu_available else "CPU"))
         self.get_logger().info("Loading model from: %s" % str(self.model_ckpt_file))
 
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         self._detector = Detector(self.model_ckpt_file, self.model_model, self.gpu_available, self.model_stride,self.model_panoramic_scan)
         self._detector.set_laser_fov(self.laser_fov)
 
@@ -72,27 +82,41 @@ class DetectorNode(Node):
                 )
             )
 
-    def transform(self, cc: np.array):
-        """
-        Apply rotation and translation in order to calibrate the points.
-        """
-        return (np.dot(self.rotation, cc.T) + self.translation).T
+    def get_timestamp_from_msgstamp(self, stamp) -> int:
+        return stamp.sec + stamp.nanosec * pow(10, -9)
 
-    def update_coordinates(self, cc: np.array):
-        """
-        This function is used to update coordinates based on lidar configuration.
-        In this specific case, the lidar is put upside down, so the coordinates must be parsed accordingly.
-        """
+    def look_up(self, to_frame_rel, from_frame_rel, stamp):
+        try:
+            t = self.tf_buffer.lookup_transform(to_frame_rel, from_frame_rel, rclpy.time.Time())
+            diff = abs(self.get_timestamp_from_msgstamp(t.header.stamp) - self.get_timestamp_from_msgstamp(stamp)) 
+            if diff > TF_DISCARD_TH_SEC:
+                self.get_logger().info("Discarding transformation older than 1 sec: abs(%.2f - %.2f) > %f" 
+                                       % (self.get_timestamp_from_msgstamp(t.header.stamp),self.get_timestamp_from_msgstamp(stamp),TF_DISCARD_TH_SEC))  
+                return None
+            return t
+        except TransformException as ex:
+            self.get_logger().error(
+                        f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
+        return None
 
-        # switch coordinates (since the lidar is mirrored) -> x,y = y,x
-        cc = cc[:, ::-1]
 
-        # if the lidar is not rotated, set negative x (which track the position of the detection) -> x,y = -x,y
-        if not self.is_rotated:
-            cc[:, 0] = -cc[:, 0]
+    def update_coordinates(self, detections: np.array, stamp):
+        transform = self.look_up(self.frame_id, self.lidar_frame_id, stamp)
+        
+        if transform is None:
+            return []
 
-        # return self.transform(cc)
-        return cc
+        for detection in detections:
+            point = PointStamped()
+            point.point.x = float(detection[0])
+            point.point.y = float(detection[1])
+            point.point.z = 0.0
+        
+            point_transformed = tf2_geometry_msgs.do_transform_point(point, transform)
+            detection[0] = point_transformed.point.x
+            detection[1] = point_transformed.point.y
+
+        return detections
 
     def _scan_callback(self, msg):
 
@@ -119,7 +143,7 @@ class DetectorNode(Node):
         self.get_logger().info(f"Detected {len(points)} people")
 
         # convert to lidar_data
-        centers = self.update_coordinates(points)
+        centers = self.update_coordinates(points, msg.header.stamp)
 
         self.publish_detections(centers, confidences, msg.header.stamp)
 
@@ -129,7 +153,7 @@ class DetectorNode(Node):
             pose.position.y = float(center[1])
             return pose
 
-    def array_to_poses(self, list: List):
+    def array_to_poses(self, list: np.array):
         poses = []
         for c in list:
             poses.append(self.center_to_pose_msg(c))

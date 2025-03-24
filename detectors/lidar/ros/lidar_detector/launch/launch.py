@@ -5,6 +5,7 @@ from launch_ros.actions import Node
 lidar_parameters = {
     "debug": True,
     "frame_id": 'world',
+    "lidar_frame_id": "laser_scan",
     "sensor_id": 1,
     "lidar_topic": "/scan",
     "output_topic": "/detections",
