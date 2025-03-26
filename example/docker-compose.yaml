@@ -9,25 +9,25 @@ include:
   - ../docker/docker-compose.yaml
 
 services:
-  rgbd-detector:
-    extends:
-      file: ../docker/docker-compose.detectors.yaml
-      service: rgbd-detector
-    command: ros2 launch rgbd_detector launch.py optical_frame_id:=camera_1_color_optical_frame
-  # lidar-detector:
+  # rgbd-detector:
   #   extends:
   #     file: ../docker/docker-compose.detectors.yaml
-  #     service: lidar-detector
+  #     service: rgbd-detector
+  #   command: ros2 launch rgbd_detector launch.py optical_frame_id:=camera_1_color_optical_frame
+  lidar-detector:
+    extends:
+      file: ../docker/docker-compose.detectors.yaml
+      service: lidar-detector
+    command: ros2 launch lidar_detector launch.py
   player:
     depends_on:
       - rexasi-tracker
-      - rgbd-detector
     container_name: player
     image: rexasi-tracker/rosbag
     build:
       context: ..
       dockerfile: example/Dockerfile
-    command: bash -c "sleep 10 && ros2 bag play /data/bag_compressed"
+    command: bash -c "sleep 10 && ros2 bag play /data/ex02_02"
     volumes:
       - ./data:/data
     networks:

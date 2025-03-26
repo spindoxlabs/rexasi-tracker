@@ -41,7 +41,7 @@ tasks:
   rviz:
     cmds:
       - xhost local:root
-      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.rviz.yaml up -d'
+      - docker run --name rviz -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY {{.DOCKER_FLAGS}} {{.BASE_IMAGE_TAG}} ros2 run rviz2 rviz2
 
   bash:
     cmds:

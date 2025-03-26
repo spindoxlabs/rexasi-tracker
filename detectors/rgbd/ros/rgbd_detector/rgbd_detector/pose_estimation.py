@@ -46,17 +46,6 @@ class PoseEstimation(Node):
                 Persons, self.output_topic, 10
             )
 
-    def handle_frame_event(self, msg):
-
-        # Converting image from topic to a cv2 image
-        image = np.frombuffer(msg.data, dtype=np.uint8).reshape(
-            msg.height, msg.width, -1
-        )
-        image: np.array = np.ascontiguousarray(image, dtype=np.uint8)
-        # Convert bgr to rgb
-        image = image[:, :, ::-1]
-
-        self.process(image)
 
     def handle_frame_event(self, msg):
 
