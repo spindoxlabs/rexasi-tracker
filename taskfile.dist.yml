@@ -1,5 +1,7 @@
 version: '3'
 
+dotenv: ['.env', '.env.example']
+
 vars:
   IMAGE_TAG: 'rexasi-tracker/tracker'
   DOCKER_COMPOSE_CMD: 'docker compose'
@@ -29,6 +31,7 @@ tasks:
       - task tracker:build
       - task detectors:setup
       - task example:setup
+      - '[ ! -f .env ] && cp .env.example .env || true'
 
   start-tracker:
     cmds:
@@ -46,3 +49,8 @@ tasks:
   bash:
     cmds:
       - docker run {{.DOCKER_FLAGS}} {{.IMAGE_TAG}} bash
+
+  stop:
+    cmds:
+      - '{{.DOCKER_COMPOSE_CMD}} -f example/docker-compose.yaml down'
+      - '{{.DOCKER_COMPOSE_CMD}} -f docker/docker-compose.yaml down'

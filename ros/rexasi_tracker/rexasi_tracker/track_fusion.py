@@ -12,6 +12,7 @@ from filterpy.kalman import KalmanFilter
 from transforms3d._gohlketransforms import quaternion_from_euler
 from geometry_msgs.msg import Pose, Twist
 
+from utils.sequencer import TimeSequencer
 from utils.dto import AssociationTrack, SensorTrack
 from utils.misc import get_timestamp, save_evaluation_data, load_yaml
 from config.parameters.defaults import X_FORWARD, sensor_exclusion, default_kalman_parameters,CONFIG_FILE, CONFIG_SCHEMA_FILE
@@ -53,10 +54,10 @@ class TrackFusion(Node):
 
         # SUBSCRIPTIONS
         input_topic = self.config["topics"]["tracker_output_topic"]
-        self.subscriber = self.create_subscription(
-            Tracks, input_topic, self.tracks_callback, 10
-        )
-        self.get_logger().info(f"Subscribed to {input_topic}")
+
+        self.sequencer = TimeSequencer(self, input_topic, callback=self.tracks_callback)
+               
+        # self.get_logger().info(f"Subscribed to {input_topic} with TimeSequencer")
 
         # PUBLISHERS
         output_topic = self.config["topics"]["fusion_output_topic"]
@@ -254,7 +255,7 @@ class TrackFusion(Node):
 
         if len(tracks_data.identities) == 0 and len(tracks_data.dead_identities) == 0:
             self.get_logger().info("No identities")
-            return
+            return False
 
         self.add_sensor_tracks(tracks_data)
 
@@ -277,6 +278,8 @@ class TrackFusion(Node):
 
         self.remove_reference_to_dead_tracks()
         self.remove_fused_with_no_references()
+        
+        return True
 
     def tracks_callback(self, tracks_data: Tracks):
 

@@ -1,5 +1,3 @@
-version: "3"
-
 networks:
   rexasi-tracker:
     name: "rexasi-tracker"

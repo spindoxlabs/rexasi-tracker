@@ -23,10 +23,10 @@ class RGBD(Node):
         super().__init__("RGBD", automatically_declare_parameters_from_overrides=True)
 
         # load parameters
-        self.debug = self.get_parameter("debug").get_parameter_value().bool_value
+        self.debug = self.get_parameter("rgbd_debug").get_parameter_value().bool_value
         self.is_rotated = self.get_parameter("is_rotated").get_parameter_value().bool_value
         self.keypoints_topic = self.get_parameter("keypoints_topic").get_parameter_value().string_value
-        self.output_topic = self.get_parameter("output_topic").get_parameter_value().string_value
+        self.detection_output_topic = self.get_parameter("detection_output_topic").get_parameter_value().string_value
         self.rgbd_depth_topic = self.get_parameter("rgbd_depth_topic").get_parameter_value().string_value
         self.rgbd_depth_camera_info_topic = self.get_parameter("rgbd_depth_camera_info_topic").get_parameter_value().string_value
         self.min_pose_confidence_score = self.get_parameter("min_pose_confidence_score").get_parameter_value().double_value
@@ -58,10 +58,10 @@ class RGBD(Node):
         )
 
         self.get_logger().info(
-            f"Publishing to {self.output_topic}"
+            f"Publishing to {self.detection_output_topic}"
         )
         self.publisher = self.create_publisher(
-                Detections, self.output_topic, 10
+                Detections, self.detection_output_topic, 10
             )
 
     def handle_camera_info(self, msg):
