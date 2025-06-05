@@ -35,11 +35,11 @@ class DetectorNode(Node):
         self.model_model = self.get_parameter("model_model").get_parameter_value().string_value
         self.model_stride = self.get_parameter("model_stride").get_parameter_value().integer_value
         self.model_panoramic_scan = self.get_parameter("model_panoramic_scan").get_parameter_value().bool_value
-        self.conf_tresh = self.get_parameter("conf_tresh").get_parameter_value().integer_value
+        self.conf_tresh = self.get_parameter("conf_tresh").get_parameter_value().double_value
         self.laser_fov = self.get_parameter("laser_fov").get_parameter_value().integer_value
         self.placeholder_value = self.get_parameter("placeholder_value").get_parameter_value().integer_value
         self.scan_rate = self.get_parameter("scan_rate").get_parameter_value().integer_value
-        self.angle_increment = self.get_parameter("angle_increment").get_parameter_value().integer_value
+        self.angle_increment = self.get_parameter("angle_increment").get_parameter_value().double_value
         self.ranges = self.get_parameter("ranges").get_parameter_value().integer_value
         self.calibration_file = self.get_parameter("calibration_file").get_parameter_value().string_value
         self.shear = self.get_parameter("shear").get_parameter_value().bool_value
@@ -60,6 +60,10 @@ class DetectorNode(Node):
 
         self._detector = Detector(self.model_ckpt_file, self.model_model, self.gpu_available, self.model_stride,self.model_panoramic_scan)
         self._detector.set_laser_fov(self.laser_fov)
+
+        # Call model on empty image to initialize it and have faster 
+        # inference on firs scan
+        self._detector(np.zeros(self.ranges))
 
         self.get_logger().info(f"Subscribing to {self.lidar_topic}")
         self.subscription = self.create_subscription(

@@ -19,10 +19,10 @@ class PoseEstimation(Node):
         super().__init__("POSE", automatically_declare_parameters_from_overrides=True)
 
         # load parameters
-        self.debug = self.get_parameter("debug").get_parameter_value().bool_value
+        self.debug = self.get_parameter("pose_debug").get_parameter_value().bool_value
         self.yolo_model = self.get_parameter("yolo_model").get_parameter_value().string_value
         self.color_topic = self.get_parameter("rgbd_color_topic").get_parameter_value().string_value
-        self.output_topic = self.get_parameter("output_topic").get_parameter_value().string_value
+        self.pose_output_topic = self.get_parameter("pose_output_topic").get_parameter_value().string_value
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         torch.cuda.device(device)
@@ -39,11 +39,15 @@ class PoseEstimation(Node):
             Image, self.color_topic, self.handle_frame_event, 10
         )
 
+        # Call model on empy image to inialise it and have faster inference
+        # time on first frame
+        self.get_poses(np.zeros((480, 848, 3), dtype=np.uint8))
+
         self.get_logger().info(
-                f"Publishing to {self.output_topic}"
+                f"Publishing to {self.pose_output_topic}"
             )
         self.publisher = self.create_publisher(
-                Persons, self.output_topic, 10
+                Persons, self.pose_output_topic, 10
             )
 
 
@@ -61,7 +65,6 @@ class PoseEstimation(Node):
 
         if len(poses) == 0:
             self.get_logger().info("No people detected")
-            return
         else:
             self.get_logger().info(f"Detected {len(poses)} people")
 
